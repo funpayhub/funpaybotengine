@@ -71,6 +71,15 @@ class AioHttpSession(BaseSession):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             await asyncio.sleep(0.25)
 
+    def prepare_cookies(self, session: ClientSession, bot: Bot) -> None:
+        session.cookie_jar.update_cookies({'cookie_prefs': '1'})  # no 3rd-party cookies
+
+        if bot.golden_key:
+            session.cookie_jar.update_cookies({'golden_key': bot.golden_key})
+
+        if bot.phpsessid:
+            session.cookie_jar.update_cookies({'PHPSESSID': bot.phpsessid})
+
     async def make_request(
         self,
         method: FunPayMethod[MethodReturnType],
@@ -78,11 +87,9 @@ class AioHttpSession(BaseSession):
         timeout: float | None = None,
     ) -> Response[MethodReturnType]:
         session = await self.session()
-        session.cookie_jar.update_cookies({'cookie_prefs': '1'})  # no 3rd-party cookies
-        if bot.golden_key:
-            session.cookie_jar.update_cookies({'golden_key': bot.golden_key})
-        if bot.phpsessid:
-            session.cookie_jar.update_cookies({'PHPSESSID': bot.phpsessid})
+
+        self.prepare_cookies(session, bot)
+
         csrf_token = bot.csrf_token if bot.csrf_token else ''
 
         timeout_obj = ClientTimeout(total=timeout if timeout is not None else method.timeout)

@@ -21,6 +21,7 @@ from funpaybotengine.types import (
     RunnerResponse,
     OrderPreviewsBatch,
     TransactionPreviewsBatch,
+    Currency
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -95,23 +96,28 @@ class Bot:
         self._golden_key = golden_key
         self._csrf_token: str | None = None
         self._phpsessid: str | None = phpsessid
+
+        self._locale: Language = None
+        self._currency: Currency = None
+
         self._session = session or AioHttpSession(proxy=proxy, default_headers=default_headers)
-        self._storage = storage or InMemoryStorage()
         self._runner = Runner(self)
 
-        self._locale: Language = Language.RU
+        self._storage = storage or InMemoryStorage()
+        self._categories_cache: CategoriesCache | None = None
 
         self._userid: int | None = None
         self._username: str | None = None
-        self._categories_cache: CategoriesCache | None = None
 
-        self._last_update_timestamp = 0
+        self._session_updated_at = 0
+
         self._messages_lock = Lock()
-
         self._listening_lock = Lock()
         self._stopping_lock = Lock()
+
         self._stop_event = Event()
         self._stopped_event = Event()
+
         self._stopped_event.set()
 
     @property
@@ -126,7 +132,7 @@ class Bot:
 
         To initialize the bot instance, use ``Bot.update`` method.
         """
-        to_check: list[Any] = [self.csrf_token, self.phpsessid, self.locale, self.categories_cache]
+        to_check: list[Any] = [self.csrf_token, self.phpsessid, self.locale, self.currency, self.categories_cache]
         if not self.anonymous:
             to_check.extend(
                 [
@@ -171,6 +177,13 @@ class Bot:
         Bot locale. Available only after initialization (``Bot.update`` method).
         """
         return self._locale
+    
+    @property
+    def currency(self) -> Currency:
+        """
+        Bot currency. Available only after initialization (``Bot.update`` method).
+        """
+        return self._currency
 
     @property
     def session(self) -> BaseSession:
@@ -188,8 +201,8 @@ class Bot:
         return self._categories_cache
 
     @property
-    def last_update_timestamp(self) -> int:
-        return self._last_update_timestamp
+    def session_updated_at(self) -> int:
+        return self._session_updated_at
 
     async def runner_request(
         self,
@@ -530,14 +543,14 @@ class Bot:
             )
 
         if not skip_initialization and (
-            not self.initialized or time.time() - self.last_update_timestamp >= 1200
+            not self.initialized or time.time() - self.session_updated_at >= 1200
         ):
             await self.update()
 
         result = await self.session.make_request(method, self)
         if 'PHPSESSID' in result.cookies:
             self._phpsessid = result.cookies['PHPSESSID']
-            self._last_update_timestamp = int(time.time())
+            self._session_updated_at = int(time.time())
         return result
 
     async def update(self, change_locale: Language | None = None) -> Self:
@@ -547,14 +560,17 @@ class Bot:
         )
 
         self._csrf_token = result.response_obj.app_data.csrf_token
-        self._locale = result.response_obj.app_data.locale
         self._phpsessid = result.cookies.get('PHPSESSID')
+
+        self._locale = result.response_obj.header.locale
+        self._currency = result.response_obj.header.currency
+
         self._categories_cache = CategoriesCache(result.response_obj.categories)
 
         self._userid = result.response_obj.header.user_id
         self._username = result.response_obj.header.username
 
-        self._last_update_timestamp = int(time.time())
+        self._session_updated_at = int(time.time())
         return self
 
     async def _listen_events(
