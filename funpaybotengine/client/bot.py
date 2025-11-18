@@ -21,7 +21,8 @@ from funpaybotengine.types import (
     RunnerResponse,
     OrderPreviewsBatch,
     TransactionPreviewsBatch,
-    Currency
+    Currency,
+    CalcResult
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -49,6 +50,8 @@ from funpaybotengine.methods import (
     MethodReturnType,
     GetSubcategoryPage,
     CheckBanned,
+    CalcLots,
+    CalcChips,
 )
 from funpaybotengine.types.enums import OrderStatus, SubcategoryType
 from funpaybotengine.types.pages import (
@@ -432,6 +435,12 @@ class Bot:
         )
 
         return await method.execute(self)
+    
+    async def calc_chips(self, game_id: int, price: float) -> CalcResult:
+        return await CalcChips(game_id=game_id, price=price).execute(self)
+    
+    async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
+        return await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
 
     @overload
     async def get_offer_fields(
@@ -562,7 +571,7 @@ class Bot:
         self._csrf_token = result.response_obj.app_data.csrf_token
         self._phpsessid = result.cookies.get('PHPSESSID')
 
-        self._locale = result.response_obj.header.locale
+        self._locale = result.response_obj.app_data.locale
         self._currency = result.response_obj.header.currency
 
         self._categories_cache = CategoriesCache(result.response_obj.categories)

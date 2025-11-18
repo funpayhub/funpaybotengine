@@ -167,9 +167,17 @@ class AioHttpSession(BaseSession):
         else:
             locale = bot.locale
 
-        url = f'{locale.value.url_alias}/{method_url[1 if method_url.startswith("/") else 0 :]}'
+        if locale is None:
+            locale = Language.RU
+
+        if method_url.startswith('/'):
+            method_url = method_url[1:]
+
+        url = f'{locale.value.url_alias}/{method_url}'
+
         if not session._base_url:
             return url
+        
         return str(session._base_url.join(URL(url)))
 
     @property

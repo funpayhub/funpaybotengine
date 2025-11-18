@@ -12,3 +12,4 @@ from .finances import *
 from .messages import *
 from .categories import *
 from .common_page_elements import *
+from .calc import *

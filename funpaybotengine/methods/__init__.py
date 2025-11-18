@@ -19,3 +19,5 @@ from .save_offer_fields import *
 from .get_subcategory_page import *
 from .raise_offers import *
 from .check_banned import *
+from .calc_chips import *
+from .calc_lots import *
