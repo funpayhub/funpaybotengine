@@ -4,13 +4,13 @@ from __future__ import annotations
 __all__ = ('CalcResult', 'MethodResult')
 
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
+from typing import Any
 
 from funpaybotengine.types.enums import Currency
 from funpaybotengine.types.common import MoneyValue
 
 from funpayparsers.parsers import MoneyValueParser
-from decimal import Decimal
 
 import re
 
@@ -19,11 +19,19 @@ class MethodResult(BaseModel):
 
     name: str = ""
     price: float = 0
-    currency: Currency = Currency.RUB
-    pos: int = 0
+
+    currency: Currency = Field(
+        default=Currency.RUB,
+        validation_alias=("currency", "unit"),
+    )
+
+    pos: int = Field(
+        default=0,
+        validation_alias=("pos", "sort"),
+    )
 
     @field_validator("currency", mode="before")
-    def _validate_currency(cls, value: any) -> Currency:
+    def _validate_currency(cls, value: Any) -> Currency:
         if value is None:
             return Currency.UNKNOWN
 
@@ -41,7 +49,7 @@ class MethodResult(BaseModel):
         return Currency.UNKNOWN
 
     @field_validator("price", mode="before")
-    def _validate_price(cls, value: any) -> float:
+    def _validate_price(cls, value: Any) -> float:
         if value is None:
             return 0.0
 
@@ -49,6 +57,7 @@ class MethodResult(BaseModel):
             return float(value)
 
         try:
+            from decimal import Decimal
             if isinstance(value, Decimal):
                 return float(value)
         except ImportError:
