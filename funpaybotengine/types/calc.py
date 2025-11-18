@@ -6,11 +6,13 @@ __all__ = ('CalcResult', 'MethodResult')
 
 from pydantic import BaseModel, field_validator
 
-from funpaybotengine.types.base import FunPayObject
 from funpaybotengine.types.enums import Currency
 from funpaybotengine.types.common import MoneyValue
 
 from funpayparsers.parsers import MoneyValueParser
+from decimal import Decimal
+
+import re
 
 class MethodResult(BaseModel):
     """Represents a result of a calculation method."""
@@ -21,18 +23,55 @@ class MethodResult(BaseModel):
     pos: int = 0
 
     @field_validator("currency", mode="before")
-    def _validate_currency(cls, value: str):
+    def _validate_currency(cls, value: any) -> Currency:
         if value is None:
-            return Currency.RUB
-        
-        return Currency.get_by_character(value)
-    
+            return Currency.UNKNOWN
+
+        if isinstance(value, Currency):
+            return value
+
+        if isinstance(value, str):
+            value = value.strip()
+
+            if not value:
+                return Currency.UNKNOWN
+            
+            return Currency.get_by_character(value)
+
+        return Currency.UNKNOWN
+
     @field_validator("price", mode="before")
-    def _validate_price(cls, value: str):
+    def _validate_price(cls, value: any) -> float:
         if value is None:
-            return 0
-        
-        return float(value.replace(' ', ''))
+            return 0.0
+
+        if isinstance(value, (int, float)):
+            return float(value)
+
+        try:
+            if isinstance(value, Decimal):
+                return float(value)
+        except ImportError:
+            pass
+
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return 0.0
+
+            raw = raw.replace(" ", "").replace("\u00a0", "")
+            raw = raw.replace(",", ".")
+            raw = re.sub(r"[^\d\.\-]", "", raw)
+
+            if not raw:
+                return 0.0
+
+            try:
+                return float(raw)
+            except ValueError:
+                raise ValueError(f"Invalid price value: {value!r}")
+
+        raise TypeError(f"Unsupported type for price: {type(value)!r}")
 
 class CalcResult(BaseModel):
     """Represents an answer from calculation request."""
