@@ -21,7 +21,7 @@ class MethodResult(BaseModel):
     price: float = 0
 
     currency: Currency = Field(
-        default=Currency.RUB,
+        default=Currency.UNKNOWN,
         validation_alias=("currency", "unit"),
     )
 
@@ -55,13 +55,6 @@ class MethodResult(BaseModel):
 
         if isinstance(value, (int, float)):
             return float(value)
-
-        try:
-            from decimal import Decimal
-            if isinstance(value, Decimal):
-                return float(value)
-        except ImportError:
-            pass
 
         if isinstance(value, str):
             raw = value.strip()
