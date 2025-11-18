@@ -35,18 +35,10 @@ class MethodResult(BaseModel):
         if value is None:
             return Currency.UNKNOWN
 
-        if isinstance(value, Currency):
-            return value
-
         if isinstance(value, str):
-            value = value.strip()
-
-            if not value:
-                return Currency.UNKNOWN
-            
             return Currency.get_by_character(value)
-
-        return Currency.UNKNOWN
+        
+        return value
 
     @field_validator("price", mode="before")
     def _validate_price(cls, value: Any) -> float:
