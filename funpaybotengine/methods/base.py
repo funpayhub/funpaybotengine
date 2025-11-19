@@ -167,6 +167,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
         (``MethodReturnType``).
         """
         if self.__model_to_build__ is not None and issubclass(self.__model_to_build__, BaseModel):
+            print(f'CONTEXT FOR {self.__class__.__name__}: {await self.get_full_context(response)}')
             return self.__model_to_build__.model_validate(
                 parsing_result,
                 context=await self.get_full_context(response),

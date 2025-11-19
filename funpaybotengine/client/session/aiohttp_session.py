@@ -89,15 +89,12 @@ class AioHttpSession(BaseSession):
         session = await self.session()
 
         self.prepare_cookies(session, bot)
-
         csrf_token = bot.csrf_token if bot.csrf_token else ''
-
         timeout_obj = ClientTimeout(total=timeout if timeout is not None else method.timeout)
-
         url = await self.resolve_url(method, bot, session)
         session_logger.info(f'Making {method.method.name} request to {url}')
-        start_time = time.time()
 
+        start_time = time.time()
         async with session:
             if method.method == HTTPMethod.GET:
                 response = await session.get(

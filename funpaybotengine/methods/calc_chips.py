@@ -3,6 +3,7 @@ from __future__ import annotations
 
 __all__ = ('CalcChips',)
 
+
 import json
 from typing import TYPE_CHECKING
 
@@ -15,14 +16,14 @@ from typing import Any
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.client import Bot, RawResponse
+    from funpaybotengine.client import RawResponse
 
 
 class CalcChips(FunPayMethod[CalcResult], BaseModel):
-    __model_to_build__ = CalcResult
-
     game_id: int
     price: float
+
+    __model_to_build__ = CalcResult
 
     def __init__(self, game_id: int, price: float) -> None:
         super().__init__(
@@ -36,6 +37,7 @@ class CalcChips(FunPayMethod[CalcResult], BaseModel):
             game_id=game_id,
             price=price,
         )
+
 
     async def parse_result(self, response: RawResponse[CalcResult]) -> dict[str, Any]:
         return json.loads(response.raw_response)

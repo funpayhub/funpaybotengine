@@ -19,19 +19,12 @@ class MethodResult(FunPayObject, BaseModel):
 
     name: str = ''
     price: float = 0
-
-    currency: Currency = Field(
-        default=Currency.UNKNOWN,
-        validation_alias='unit',
-    )
-
-    pos: int = Field(
-        default=0,
-        validation_alias='sort',
-    )
+    currency: Currency = Field(default=Currency.UNKNOWN, validation_alias='unit')
+    pos: int = Field(default=0, validation_alias='sort')
 
     @field_validator('currency', mode='before')
-    def _validate_currency(self, value: Any) -> Currency:
+    @classmethod
+    def _validate_currency(cls, value: Any) -> Currency:
         if isinstance(value, str):
             return Currency.get_by_character(value)
         return Currency.UNKNOWN
@@ -40,12 +33,13 @@ class MethodResult(FunPayObject, BaseModel):
 class CalcResult(FunPayObject, BaseModel):
     """Represents an answer from calculation request."""
 
-    methods: list[MethodResult] = []
+    methods: list[MethodResult] = Field(default_factory=list)
     min_price: MoneyValue | None = None
     error: bool | str | None = None
 
     @field_validator('min_price', mode='before')
-    def _validate_min_price(self, value: Any) -> dict[str, Any] | None:
+    @classmethod
+    def _validate_min_price(cls, value: Any) -> dict[str, Any] | None:
         if value is None:
             return None
 

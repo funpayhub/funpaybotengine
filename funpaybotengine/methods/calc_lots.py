@@ -19,12 +19,16 @@ if TYPE_CHECKING:
 
 
 class CalcLots(FunPayMethod[CalcResult], BaseModel):
-    __model_to_build__ = CalcResult
-
     subcategory_id: int
     price: float
 
-    def __init__(self, subcategory_id: int, price: float) -> None:
+    __model_to_build__ = CalcResult
+
+    def __init__(
+        self,
+        subcategory_id: int,
+        price: float
+    ) -> None:
         super().__init__(
             url='lots/calc',
             method=HTTPMethod.POST,
