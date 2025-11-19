@@ -22,12 +22,12 @@ class MethodResult(BaseModel):
 
     currency: Currency = Field(
         default=Currency.UNKNOWN,
-        validation_alias=("currency", "unit"),
+        validation_alias="unit",
     )
 
     pos: int = Field(
         default=0,
-        validation_alias=("pos", "sort"),
+        validation_alias="sort",
     )
 
     @field_validator("currency", mode="before")
