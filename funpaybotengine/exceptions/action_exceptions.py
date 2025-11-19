@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 __all__ = ['RefundError', 'RaiseOffersError']
 from .base import FunPayBotEngineError
 
@@ -16,7 +17,11 @@ class RefundError(FunPayBotEngineError):
 
 class RaiseOffersError(FunPayBotEngineError):
     def __init__(
-        self, response: str, category_id: int, message: str | None, wait_time: int | None
+        self,
+        response: str,
+        category_id: int,
+        message: str | None,
+        wait_time: int | None,
     ) -> None:
         super().__init__()
         self.raw_response = response

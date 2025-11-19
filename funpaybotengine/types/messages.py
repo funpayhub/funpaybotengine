@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ('Message',)
 
 
-from typing import TYPE_CHECKING, Any, overload, Literal
+from typing import TYPE_CHECKING, Any, Literal, overload
 from io import BytesIO
 
 from pydantic import BaseModel, PrivateAttr, ValidationInfo, field_validator
@@ -152,8 +152,7 @@ class Message(FunPayObject, BaseModel):
         image: str | BytesIO | int | None = None,
         enforce_whitespaces: bool = True,
         keep_chat_unread: Literal[False] = False,
-    ) -> Message:
-        ...
+    ) -> Message: ...
 
     @overload
     async def reply(
@@ -162,8 +161,7 @@ class Message(FunPayObject, BaseModel):
         image: str | BytesIO | int | None = None,
         enforce_whitespaces: bool = True,
         keep_chat_unread: Literal[True] = True,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def reply(
         self,

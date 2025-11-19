@@ -4,22 +4,22 @@ from __future__ import annotations
 __all__ = ('CalcLots',)
 
 import json
-
-from pydantic import BaseModel
 from typing import TYPE_CHECKING
 
-from funpaybotengine.methods.base import FunPayMethod
-from funpaybotengine.client.session import HTTPMethod
+from pydantic import BaseModel
 
 from funpaybotengine.types.calc import CalcResult
+from funpaybotengine.methods.base import FunPayMethod
+from funpaybotengine.client.session import HTTPMethod
+from typing import Any
+
 
 if TYPE_CHECKING:
-    from funpaybotengine.client import Bot
     from funpaybotengine.client import RawResponse
 
 
-class CalcLots(FunPayMethod[list[CalcResult]], BaseModel):
-    __model_to_build__ = None
+class CalcLots(FunPayMethod[CalcResult], BaseModel):
+    __model_to_build__ = CalcResult
 
     subcategory_id: int
     price: float
@@ -37,17 +37,5 @@ class CalcLots(FunPayMethod[list[CalcResult]], BaseModel):
             price=price,
         )
 
-    async def parse_result(self, response: RawResponse[list[CalcResult]]) -> list[CalcResult]:
-        raw_json = json.loads(response.raw_response)
-
-        if "methods" not in raw_json:
-            return []
-
-        return CalcResult.model_validate(raw_json)
-
-    async def transform_result(self, parsing_result: list[CalcResult], response: RawResponse[list[CalcResult]]) -> list[CalcResult]:
-        return parsing_result
-
-    async def execute(self, as_: Bot) -> list[CalcResult]:
-        result = await as_.make_request(self, skip_initialization=True)
-        return result.response_obj
+    async def parse_result(self, response: RawResponse[CalcResult]) -> dict[str, Any]:
+        return json.loads(response.raw_response)

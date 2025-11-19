@@ -3,17 +3,17 @@ from __future__ import annotations
 
 __all__ = ('RaiseOffers',)
 
+import re
 import json
 from typing import TYPE_CHECKING
 
 from pydantic import Field
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal, Annotated
 
+from funpaybotengine.exceptions import RaiseOffersError
 from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
-from funpaybotengine.exceptions import RaiseOffersError
-import re
 
 
 if TYPE_CHECKING:
@@ -26,12 +26,11 @@ def parse_wait_time(response: str) -> int:
 
     if 'секунд' in response or 'second' in response:
         return time or 2
-    elif 'минут' in response or 'хвилин' in response or 'minute' in response:
+    if 'минут' in response or 'хвилин' in response or 'minute' in response:
         return (time - 1 if time else 1) * 60
-    elif 'час' in response or 'годин' in response or 'hour' in response:
+    if 'час' in response or 'годин' in response or 'hour' in response:
         return int((time - 0.5 if time else 1) * 3600)
-    else:
-        return 10
+    return 10
 
 
 class RaiseOffers(FunPayMethod[Literal[True]]):
@@ -39,7 +38,10 @@ class RaiseOffers(FunPayMethod[Literal[True]]):
     subcategory_ids: Annotated[list[int], Field(min_length=1)]
 
     def __init__(
-        self, category_id: int, subcategory_ids: list[int], locale: Language | None = None
+        self,
+        category_id: int,
+        subcategory_ids: list[int],
+        locale: Language | None = None,
     ):
         super().__init__(
             url='lots/raise',
@@ -73,6 +75,8 @@ class RaiseOffers(FunPayMethod[Literal[True]]):
         return True
 
     async def transform_result(
-        self, parsing_result: Literal[True], response: RawResponse[bool]
+        self,
+        parsing_result: Literal[True],
+        response: RawResponse[bool],
     ) -> Literal[True]:
         return True

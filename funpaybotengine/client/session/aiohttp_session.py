@@ -177,7 +177,7 @@ class AioHttpSession(BaseSession):
 
         if not session._base_url:
             return url
-        
+
         return str(session._base_url.join(URL(url)))
 
     @property

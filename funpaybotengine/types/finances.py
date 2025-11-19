@@ -109,5 +109,5 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
 
         return await self.get_bound_bot().get_transactions(
             from_transaction_id=self.next_transaction_id,
-            filter=self.filter or ''
+            filter=self.filter or '',
         )

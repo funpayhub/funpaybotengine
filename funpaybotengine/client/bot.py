@@ -4,25 +4,25 @@ from __future__ import annotations
 __all__ = ('Bot',)
 
 import time
+import asyncio
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 from io import BytesIO
-import asyncio
-from contextlib import suppress
 from asyncio import Lock, Event
+from contextlib import suppress
 from collections.abc import Callable, Sequence
 
 from typing_extensions import Self
 
 from funpaybotengine.types import (
     Message,
+    Currency,
     Language,
+    CalcResult,
     OfferFields,
     Subcategory,
     RunnerResponse,
     OrderPreviewsBatch,
     TransactionPreviewsBatch,
-    Currency,
-    CalcResult
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -33,7 +33,10 @@ from funpaybotengine.runner import Runner
 from funpaybotengine.methods import (
     Refund,
     Review,
+    CalcLots,
     GetSales,
+    CalcChips,
+    CheckBanned,
     GetChatPage,
     GetMainPage,
     UploadImage,
@@ -49,9 +52,6 @@ from funpaybotengine.methods import (
     SaveOfferFields,
     MethodReturnType,
     GetSubcategoryPage,
-    CheckBanned,
-    CalcLots,
-    CalcChips,
 )
 from funpaybotengine.types.enums import OrderStatus, SubcategoryType
 from funpaybotengine.types.pages import (
@@ -70,7 +70,6 @@ from funpaybotengine.types.requests import (
     SendMessageAction,
     SendingMessageData,
 )
-
 from funpaybotengine.client.session.base import Response
 from funpaybotengine.client.categories_cache import CategoriesCache
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
@@ -135,7 +134,13 @@ class Bot:
 
         To initialize the bot instance, use ``Bot.update`` method.
         """
-        to_check: list[Any] = [self.csrf_token, self.phpsessid, self.locale, self.currency, self.categories_cache]
+        to_check: list[Any] = [
+            self.csrf_token,
+            self.phpsessid,
+            self.locale,
+            self.currency,
+            self.categories_cache,
+        ]
         if not self.anonymous:
             to_check.extend(
                 [
@@ -180,7 +185,7 @@ class Bot:
         Bot locale. Available only after initialization (``Bot.update`` method).
         """
         return self._locale
-    
+
     @property
     def currency(self) -> Currency:
         """
@@ -435,10 +440,10 @@ class Bot:
         )
 
         return await method.execute(self)
-    
+
     async def calc_chips(self, game_id: int, price: float) -> CalcResult:
         return await CalcChips(game_id=game_id, price=price).execute(self)
-    
+
     async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
         return await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
 
@@ -630,7 +635,7 @@ class Bot:
                         config=config,
                         session_storage=session_storage,
                         workflow_injection=workflow_injection,
-                    )
+                    ),
                 ),
                 asyncio.create_task(self._stop_event.wait()),
             ]

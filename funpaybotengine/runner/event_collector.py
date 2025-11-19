@@ -103,7 +103,8 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
 class TotalEvents:
     def __init__(self, timestamp: int | float) -> None:
         self.tree: dict[
-            ChatChangedEvent, dict[NewMessageEvent, OrderEvent | ReviewEvent | None]
+            ChatChangedEvent,
+            dict[NewMessageEvent, OrderEvent | ReviewEvent | None],
         ] = {}
         self.sales_related: list[NewMessageEvent] = []
         self.purchases_related: list[NewMessageEvent] = []

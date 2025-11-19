@@ -4,8 +4,9 @@ from __future__ import annotations
 __all__ = ['RunnerRequestError']
 
 
-from .base import FunPayBotEngineError
 from typing import TYPE_CHECKING
+
+from .base import FunPayBotEngineError
 
 
 if TYPE_CHECKING:

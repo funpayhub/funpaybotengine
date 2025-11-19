@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .base import *
+from .calc import *
 from .chat import *
 from .enums import *
 from .common import *
@@ -12,4 +13,3 @@ from .finances import *
 from .messages import *
 from .categories import *
 from .common_page_elements import *
-from .calc import *

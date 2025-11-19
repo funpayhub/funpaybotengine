@@ -104,7 +104,7 @@ class OrderPreviewsBatch(FunPayObject):
             buyer_username_filter=self.buyer_username_filter,
             status_filter=self.status_filter,
             game_id_filter=self.game_id_filter,
-            other_filters=self.other_filters
+            other_filters=self.other_filters,
         )
 
     @computed_field  # type: ignore[prop-decorator]

@@ -3,15 +3,16 @@ from __future__ import annotations
 
 __all__ = ('CheckBanned',)
 
-from pydantic import BaseModel
 from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.client import Bot
-    from funpaybotengine.client import RawResponse
+    from funpaybotengine.client import Bot, RawResponse
 
 
 class CheckBanned(FunPayMethod[bool], BaseModel):

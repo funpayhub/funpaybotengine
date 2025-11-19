@@ -66,7 +66,7 @@ class GetSales(FunPayMethod[OrderPreviewsBatch], BaseModel):
                 'buyer_username_filter': buyer_username_filter,
                 'status_filter': status_filter,
                 'game_id_filter': game_id_filter,
-                'other_filters': other_filters
+                'other_filters': other_filters,
             },
             from_order_id=from_order_id,
             order_id_filter=order_id_filter,

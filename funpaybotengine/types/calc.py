@@ -4,52 +4,50 @@ from __future__ import annotations
 __all__ = ('CalcResult', 'MethodResult')
 
 
-from pydantic import BaseModel, field_validator, Field
 from typing import Any
+
+from pydantic import Field, BaseModel, field_validator
+from funpayparsers.parsers import MoneyValueParser
 
 from funpaybotengine.types.enums import Currency
 from funpaybotengine.types.common import MoneyValue
+from funpaybotengine.types.base import FunPayObject
 
-from funpayparsers.parsers import MoneyValueParser
 
-import re
-
-class MethodResult(BaseModel):
+class MethodResult(FunPayObject, BaseModel):
     """Represents a result of a calculation method."""
 
-    name: str = ""
+    name: str = ''
     price: float = 0
 
     currency: Currency = Field(
         default=Currency.UNKNOWN,
-        validation_alias="unit",
+        validation_alias='unit',
     )
 
     pos: int = Field(
         default=0,
-        validation_alias="sort",
+        validation_alias='sort',
     )
 
-    @field_validator("currency", mode="before")
-    def _validate_currency(cls, value: Any) -> Currency:
-        if value is None:
-            return Currency.UNKNOWN
-
+    @field_validator('currency', mode='before')
+    def _validate_currency(self, value: Any) -> Currency:
         if isinstance(value, str):
             return Currency.get_by_character(value)
-        
-        return value
+        return Currency.UNKNOWN
 
-class CalcResult(BaseModel):
+
+class CalcResult(FunPayObject, BaseModel):
     """Represents an answer from calculation request."""
 
     methods: list[MethodResult] = []
     min_price: MoneyValue | None = None
     error: bool | str | None = None
 
-    @field_validator("min_price", mode="before")
-    def _validate_min_price(cls, value):
+    @field_validator('min_price', mode='before')
+    def _validate_min_price(self, value: Any) -> dict[str, Any] | None:
         if value is None:
             return None
-        
-        return MoneyValueParser(value).parse()
+
+        result = MoneyValueParser(value).parse()
+        return result.as_dict()

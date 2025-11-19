@@ -12,8 +12,8 @@ from collections.abc import Callable, Awaitable
 
 from pydantic import Field, BaseModel, ConfigDict
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
-from funpaybotengine.types.enums import Language
 
+from funpaybotengine.types.enums import Language
 from funpaybotengine.client.session.http_methods import HTTPMethod
 
 

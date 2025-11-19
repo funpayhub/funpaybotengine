@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ('RunnerRequest',)
 
 import json
-from typing import TYPE_CHECKING, Literal, Any
+from typing import TYPE_CHECKING, Any, Literal
 from collections.abc import Sequence
 
 from pydantic import BaseModel
@@ -12,16 +12,16 @@ from funpayparsers.parsers import UpdatesParser
 from funpayparsers.types.updates import RunnerResponse as PRunnerResponse
 
 from funpaybotengine.types import RunnerResponse
+from funpaybotengine.exceptions import RunnerRequestError
 from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
-from funpaybotengine.exceptions import RunnerRequestError
 from funpaybotengine.types.requests import Action, RequestableObject
 from funpaybotengine.client.session.http_methods import HTTPMethod
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.client.bot import Bot
     from funpaybotengine.client import RawResponse
+    from funpaybotengine.client.bot import Bot
 
 
 class RunnerRequest(FunPayMethod[RunnerResponse], BaseModel):
