@@ -40,33 +40,6 @@ class MethodResult(BaseModel):
         
         return value
 
-    @field_validator("price", mode="before")
-    def _validate_price(cls, value: Any) -> float:
-        if value is None:
-            return 0.0
-
-        if isinstance(value, (int, float)):
-            return float(value)
-
-        if isinstance(value, str):
-            raw = value.strip()
-            if not raw:
-                return 0.0
-
-            raw = raw.replace(" ", "").replace("\u00a0", "")
-            raw = raw.replace(",", ".")
-            raw = re.sub(r"[^\d\.\-]", "", raw)
-
-            if not raw:
-                return 0.0
-
-            try:
-                return float(raw)
-            except ValueError:
-                raise ValueError(f"Invalid price value: {value!r}")
-
-        raise TypeError(f"Unsupported type for price: {type(value)!r}")
-
 class CalcResult(BaseModel):
     """Represents an answer from calculation request."""
 
