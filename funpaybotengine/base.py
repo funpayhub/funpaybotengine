@@ -23,9 +23,6 @@ F = TypeVar('F', bound=Callable[..., Any])
 class BindableObject(BaseModel):
     _bot: Bot | None = PrivateAttr(None)
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-
     def model_post_init(self, context: dict[Any, Any]) -> None:
         self._bot = context.get('bot') if context else None
 
