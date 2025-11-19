@@ -3,11 +3,10 @@ from __future__ import annotations
 
 __all__ = ('FunPayObject', 'FunPayMutableObject')
 
+import json
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr
-from pydantic import model_validator
-import json
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 
 from funpaybotengine.base import BindableObject
 

@@ -9,9 +9,9 @@ from typing import Any
 from pydantic import Field, BaseModel, field_validator
 from funpayparsers.parsers import MoneyValueParser
 
+from funpaybotengine.types.base import FunPayObject
 from funpaybotengine.types.enums import Currency
 from funpaybotengine.types.common import MoneyValue
-from funpaybotengine.types.base import FunPayObject
 
 
 class MethodResult(FunPayObject, BaseModel):

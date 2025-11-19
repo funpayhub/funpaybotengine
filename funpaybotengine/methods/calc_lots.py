@@ -4,14 +4,13 @@ from __future__ import annotations
 __all__ = ('CalcLots',)
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
 from funpaybotengine.types.calc import CalcResult
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
-from typing import Any
 
 
 if TYPE_CHECKING:
@@ -27,7 +26,7 @@ class CalcLots(FunPayMethod[CalcResult], BaseModel):
     def __init__(
         self,
         subcategory_id: int,
-        price: float
+        price: float,
     ) -> None:
         super().__init__(
             url='lots/calc',
