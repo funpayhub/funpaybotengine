@@ -13,32 +13,6 @@ from funpaybotengine.types.enums import SubcategoryType
 
 class Storage(ABC):
     @abstractmethod
-    async def get_chat(self, chat_id: int) -> PrivateChatPreview | None: ...
-
-    @abstractmethod
-    async def update_chat(self, chat: PrivateChatPreview) -> None: ...
-
-    @abstractmethod
-    async def update_chats(self, *chats: PrivateChatPreview) -> None: ...
-
-    @abstractmethod
-    async def get_order(self, order_id: str) -> OrderPreview | None: ...
-
-    @abstractmethod
-    async def update_order(self, order: OrderPreview) -> None: ...
-
-    @abstractmethod
-    async def update_orders(self, *orders: OrderPreview) -> None: ...
-
-    @abstractmethod
-    async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None: ...
-
-    @abstractmethod
-    async def is_message_sent_by_bot(self, message_id: int) -> bool: ...
-
-
-class Storage2(ABC):
-    @abstractmethod
     async def get_chat_preview(self, chat_id: int) -> PrivateChatPreview | None:
         """
         Retrieves single chat preview.
@@ -64,6 +38,7 @@ class Storage2(ABC):
 
         :param chats: Chat previews to save.
         """
+        ...
 
     @abstractmethod
     async def get_order_preview(self, order_id: str) -> OrderPreview | None:
@@ -91,15 +66,21 @@ class Storage2(ABC):
 
         :param orders: Order previews to save.
         """
+        ...
 
     @abstractmethod
-    async def get_subcategory(self, subcategory_type: SubcategoryType, subcategory_id: int) -> Subcategory | None:
+    async def get_subcategory(
+        self,
+        subcategory_type: SubcategoryType,
+        subcategory_id: int
+    ) -> Subcategory | None:
         """
         Retrieves single subcategory.
 
         :param subcategory_type: Subcategory type.
         :param subcategory_id: Subcategory ID.
         """
+        ...
 
     @abstractmethod
     async def get_subcategories(
@@ -114,6 +95,7 @@ class Storage2(ABC):
         :param subcategory_ids: Subcategory IDs. If not specified,
         all saved subcategories of specified type will be returned.
         """
+        ...
 
     @abstractmethod
     async def save_subcategories(self, subcategory: Subcategory) -> None:
@@ -122,6 +104,7 @@ class Storage2(ABC):
 
         :param subcategory: Subcategories to save.
         """
+        ...
 
     @abstractmethod
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:

@@ -221,7 +221,7 @@ class EventCollector:
             logger.debug(
                 f'Chat {i.id} ({i.username}) initialized. Last message ID: {i.last_message_id}',
             )
-            await self.session_storage.update_chat(i)
+            await self.session_storage.save_chat_previews(i)
 
     async def get_chat_changed_events(self) -> TotalEvents | None:
         logger.debug('Getting changed chats...')
@@ -232,7 +232,7 @@ class EventCollector:
         result = TotalEvents(timestamp=runner_response.timestamp)
 
         for chat_preview in reversed(runner_response.chat_bookmarks.data.chat_previews):
-            cached_chat = await self.session_storage.get_chat(chat_preview.id)
+            cached_chat = await self.session_storage.get_chat_preview(chat_preview.id)
 
             if cached_chat and cached_chat.last_message_id == chat_preview.last_message_id:
                 logger.debug(
@@ -300,7 +300,8 @@ class EventCollector:
             total.sales_related.append(unknown)
             return
 
-        saved_order = await self.storage.get_order(unknown.object.meta.order_id)  # type: ignore[arg-type]
+        saved_order = await self.storage.get_order_preview(
+            unknown.object.meta.order_id)  # type: ignore[arg-type]
         if saved_order and saved_order.type is not OrderPreviewType.UNKNOWN:
             if saved_order.type is OrderPreviewType.PURCHASE:
                 total.purchases_related.append(unknown)
@@ -315,7 +316,7 @@ class EventCollector:
             if order_preview:
                 total.sales_related.append(unknown)
                 sales[order_preview[0].id] = order_preview[0]
-                await self.storage.update_order(order_preview[0])
+                await self.storage.save_order_previews(order_preview[0])
                 return
 
         if self.config.discover_purchases:
@@ -323,7 +324,7 @@ class EventCollector:
             if order_preview:
                 total.purchases_related.append(unknown)
                 purchases[order_preview[0].id] = order_preview[0]
-                await self.storage.update_order(order_preview[0])
+                await self.storage.save_order_previews(order_preview[0])
                 return
 
     async def _make_order_events(
@@ -370,7 +371,7 @@ class EventCollector:
         logger.debug(f'Finished getting events. Total events: {len(events)}')
 
         for i in total.tree:  # todo: update all chats with 1 method only (storage.update_chats)
-            await self.session_storage.update_chat(i.object)
+            await self.session_storage.save_chat_previews(i.object)
 
         order_events_mapping = {}
         cm = total.chainmap
@@ -380,7 +381,7 @@ class EventCollector:
                 order_events_mapping[order_event._order_preview.id] = order_event._order_preview
 
         for k in order_events_mapping.values():
-            await self.storage.update_order(k)
+            await self.storage.save_order_previews(k)
 
         self.last_chats_request_timestamp = total.timestamp
         return events
