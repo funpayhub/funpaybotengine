@@ -5,7 +5,7 @@ __all__ = ('Storage',)
 
 from abc import ABC, abstractmethod
 
-from funpaybotengine.types import Subcategory
+from funpaybotengine.types import Subcategory, Category
 from funpaybotengine.types.chat import PrivateChatPreview
 from funpaybotengine.types.orders import OrderPreview
 from funpaybotengine.types.enums import SubcategoryType
@@ -15,26 +15,29 @@ class Storage(ABC):
     @abstractmethod
     async def get_chat_preview(self, chat_id: int) -> PrivateChatPreview | None:
         """
-        Retrieves single chat preview.
+        Retrieve a single chat preview.
 
         :param chat_id: Chat ID.
+        :returns: Chat preview, or ``None`` if not found.
         """
         ...
 
     @abstractmethod
-    async def get_chat_previews(self, *chat_ids: int | str) -> list[PrivateChatPreview | None]:
+    async def get_chat_previews(self, *chat_ids: int) -> list[PrivateChatPreview | None]:
         """
-        Retrieves multiple chat previews. If `chat_ids` not specified, all saved chat previews
-        will be returned.
+        Retrieve multiple chat previews.
 
-        :param chat_ids: Chat IDs. If not specified, returns all saved chats.
+        If no ``chat_ids`` are provided, all saved chat previews are returned.
+
+        :param chat_ids: Chat IDs.
+        :returns: List of chat previews or ``None`` for missing entries.
         """
         ...
 
     @abstractmethod
     async def save_chat_previews(self, *chats: PrivateChatPreview) -> None:
         """
-        Saves provided chat previews.
+        Save provided chat previews.
 
         :param chats: Chat previews to save.
         """
@@ -43,28 +46,62 @@ class Storage(ABC):
     @abstractmethod
     async def get_order_preview(self, order_id: str) -> OrderPreview | None:
         """
-        Retrieves single order preview.
+        Retrieve a single order preview.
 
         :param order_id: Order ID.
+        :returns: Order preview, or ``None`` if not found.
         """
         ...
 
     @abstractmethod
     async def get_order_previews(self, *order_ids: str) -> list[OrderPreview | None]:
         """
-        Retrieves multiple order previews. If `order_ids` not specified, all saved order previews
-        will be returned.
+        Retrieve multiple order previews.
 
-        :param order_ids: Chat IDs. If not specified, returns all saved chats.
+        If no ``order_ids`` are provided, all saved order previews are returned.
+
+        :param order_ids: Order IDs.
+        :returns: List of order previews or ``None`` for missing entries.
         """
         ...
 
     @abstractmethod
     async def save_order_previews(self, *orders: OrderPreview) -> None:
         """
-        Saves provided order previews.
+        Save provided order previews.
 
         :param orders: Order previews to save.
+        """
+        ...
+
+    @abstractmethod
+    async def get_category(self, category_id: int) -> Category | None:
+        """
+        Retrieve a single category.
+
+        :param category_id: Category ID.
+        :returns: Category, or ``None`` if not found.
+        """
+        ...
+
+    @abstractmethod
+    async def get_categories(self, *category_ids: int) -> list[Category | None]:
+        """
+        Retrieve multiple categories.
+
+        If no ``category_ids`` are provided, all saved categories are returned.
+
+        :param category_ids: Category IDs.
+        :returns: List of categories or ``None`` for missing entries.
+        """
+        ...
+
+    @abstractmethod
+    async def save_categories(self, *categories: Category) -> None:
+        """
+        Save provided categories.
+
+        :param categories: Categories to save.
         """
         ...
 
@@ -75,10 +112,11 @@ class Storage(ABC):
         subcategory_id: int
     ) -> Subcategory | None:
         """
-        Retrieves single subcategory.
+        Retrieve a single subcategory.
 
         :param subcategory_type: Subcategory type.
         :param subcategory_id: Subcategory ID.
+        :returns: Subcategory, or ``None`` if not found.
         """
         ...
 
@@ -89,39 +127,42 @@ class Storage(ABC):
         *subcategory_ids: int,
     ) -> list[Subcategory | None]:
         """
-        Retrieves multiple subcategories.
+        Retrieve multiple subcategories.
+
+        If no ``subcategory_ids`` are provided, all subcategories
+        of the given type are returned.
 
         :param subcategory_type: Subcategory type.
-        :param subcategory_ids: Subcategory IDs. If not specified,
-        all saved subcategories of specified type will be returned.
+        :param subcategory_ids: Subcategory IDs.
+        :returns: List of subcategories or ``None`` for missing entries.
         """
         ...
 
     @abstractmethod
     async def save_subcategories(self, subcategory: Subcategory) -> None:
         """
-        Saves provided subcategories.
+        Save the provided subcategory.
 
-        :param subcategory: Subcategories to save.
+        :param subcategory: Subcategory to save.
         """
         ...
 
     @abstractmethod
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
         """
-        Marks message with `message_id` as sent by bot.
+        Mark a message as sent by the bot.
 
         :param message_id: Message ID to mark.
-        :param by_bot: Whether is message sent by bot or not.
+        :param by_bot: Whether the message was sent by the bot.
         """
         ...
 
     @abstractmethod
     async def is_message_sent_by_bot(self, message_id: int) -> bool:
         """
-        Returns `True` if message with `message_id` is sent by bot.
+        Check whether a message was sent by the bot.
 
-        :param message_id: Message ID to check.
-        :return: `True` if message with `message_id` is sent by bot, otherwise - `False`.
+        :param message_id: Message ID.
+        :returns: ``True`` if the message was sent by the bot, otherwise ``False``.
         """
         ...
