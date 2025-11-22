@@ -45,13 +45,12 @@ class InMemoryStorage(Storage):
     async def get_categories(self, *category_ids: int) -> list[Category | None]:
         raise NotImplementedError()  # todo
 
-    async def save_categories(self, *categories: Category | None) -> None:
-        ...
+    async def save_categories(self, *categories: Category | None) -> None: ...
 
     async def get_subcategory(
         self,
         subcategory_type: SubcategoryType,
-        subcategory_id: int
+        subcategory_id: int,
     ) -> Subcategory | None:
         raise NotImplementedError()  # todo
 
@@ -62,8 +61,7 @@ class InMemoryStorage(Storage):
     ) -> list[Subcategory | None]:
         raise NotImplementedError()  # todo
 
-    async def save_subcategories(self, subcategory: Subcategory) -> None:
-        ...
+    async def save_subcategories(self, subcategory: Subcategory) -> None: ...
 
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
         if by_bot:

@@ -231,11 +231,11 @@ class EventCollector:
 
         result = TotalEvents(timestamp=runner_response.timestamp)
         cached_chat_previews = await self.session_storage.get_chat_previews(
-            *(i.id for i in runner_response.chat_bookmarks.data.chat_previews)
+            *(i.id for i in runner_response.chat_bookmarks.data.chat_previews),
         )
 
         for index, chat_preview in enumerate(
-            reversed(runner_response.chat_bookmarks.data.chat_previews)
+            reversed(runner_response.chat_bookmarks.data.chat_previews),
         ):
             cached_chat = cached_chat_previews[index]
 
@@ -305,8 +305,7 @@ class EventCollector:
             total.sales_related.append(unknown)
             return
 
-        saved_order = await self.storage.get_order_preview(
-            unknown.object.meta.order_id)  # type: ignore[arg-type]
+        saved_order = await self.storage.get_order_preview(unknown.object.meta.order_id)  # type: ignore[arg-type]
         if saved_order and saved_order.type is not OrderPreviewType.UNKNOWN:
             if saved_order.type is OrderPreviewType.PURCHASE:
                 total.purchases_related.append(unknown)

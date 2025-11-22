@@ -141,7 +141,6 @@ class AioHttpSession(BaseSession):
             context={'session': self, 'bot': bot},
         )
 
-
         start_time = time.time()
         response_obj = await method.to_obj(raw_response)
         result = Response.from_raw_response(raw_response, response_obj)

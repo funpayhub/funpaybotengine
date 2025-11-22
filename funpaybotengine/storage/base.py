@@ -5,10 +5,10 @@ __all__ = ('Storage',)
 
 from abc import ABC, abstractmethod
 
-from funpaybotengine.types import Subcategory, Category
+from funpaybotengine.types import Category, Subcategory
 from funpaybotengine.types.chat import PrivateChatPreview
-from funpaybotengine.types.orders import OrderPreview
 from funpaybotengine.types.enums import SubcategoryType
+from funpaybotengine.types.orders import OrderPreview
 
 
 class Storage(ABC):
@@ -109,7 +109,7 @@ class Storage(ABC):
     async def get_subcategory(
         self,
         subcategory_type: SubcategoryType,
-        subcategory_id: int
+        subcategory_id: int,
     ) -> Subcategory | None:
         """
         Retrieve a single subcategory.
