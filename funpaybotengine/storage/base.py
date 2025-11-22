@@ -122,3 +122,23 @@ class Storage2(ABC):
 
         :param subcategory: Subcategories to save.
         """
+
+    @abstractmethod
+    async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
+        """
+        Marks message with `message_id` as sent by bot.
+
+        :param message_id: Message ID to mark.
+        :param by_bot: Whether is message sent by bot or not.
+        """
+        ...
+
+    @abstractmethod
+    async def is_message_sent_by_bot(self, message_id: int) -> bool:
+        """
+        Returns `True` if message with `message_id` is sent by bot.
+
+        :param message_id: Message ID to check.
+        :return: `True` if message with `message_id` is sent by bot, otherwise - `False`.
+        """
+        ...
