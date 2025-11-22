@@ -230,9 +230,14 @@ class EventCollector:
             return None
 
         result = TotalEvents(timestamp=runner_response.timestamp)
+        cached_chat_previews = await self.session_storage.get_chat_previews(
+            *(i.id for i in runner_response.chat_bookmarks.data.chat_previews)
+        )
 
-        for chat_preview in reversed(runner_response.chat_bookmarks.data.chat_previews):
-            cached_chat = await self.session_storage.get_chat_preview(chat_preview.id)
+        for index, chat_preview in enumerate(
+            reversed(runner_response.chat_bookmarks.data.chat_previews)
+        ):
+            cached_chat = cached_chat_previews[index]
 
             if cached_chat and cached_chat.last_message_id == chat_preview.last_message_id:
                 logger.debug(

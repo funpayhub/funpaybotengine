@@ -99,8 +99,8 @@ class Bot:
         self._csrf_token: str | None = None
         self._phpsessid: str | None = phpsessid
 
-        self._locale: Language = None
-        self._currency: Currency = None
+        self._locale: Language | None = None
+        self._currency: Currency | None = None
 
         self._session = session or AioHttpSession(proxy=proxy, default_headers=default_headers)
         self._runner = Runner(self)

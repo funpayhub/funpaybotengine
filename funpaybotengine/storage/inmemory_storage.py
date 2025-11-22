@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from funpayparsers.types import SubcategoryType
+
+from funpaybotengine.types import Category, Subcategory
 from funpaybotengine.types.chat import PrivateChatPreview
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.types.orders import OrderPreview
@@ -12,6 +15,8 @@ class InMemoryStorage(Storage):
     def __init__(self) -> None:
         self._chats: dict[int, PrivateChatPreview] = {}
         self._orders: dict[str, OrderPreview] = {}
+        self._categories: dict[int, Category] = {}
+        self._subcategories: dict[str, Subcategory] = {}
         self._sent_by_bot: set[int] = set()
 
     async def get_chat_preview(self, chat_id: int) -> PrivateChatPreview | None:
@@ -33,6 +38,32 @@ class InMemoryStorage(Storage):
     async def save_order_previews(self, *orders: OrderPreview) -> None:
         for i in orders:
             self._orders[i.id] = i
+
+    async def get_category(self, category_id: int) -> Category | None:
+        raise NotImplementedError()  # todo
+
+    async def get_categories(self, *category_ids: int) -> list[Category | None]:
+        raise NotImplementedError()  # todo
+
+    async def save_categories(self, *categories: Category | None) -> None:
+        ...
+
+    async def get_subcategory(
+        self,
+        subcategory_type: SubcategoryType,
+        subcategory_id: int
+    ) -> Subcategory | None:
+        raise NotImplementedError()  # todo
+
+    async def get_subcategories(
+        self,
+        subcategory_type: SubcategoryType,
+        *subcategory_ids: int,
+    ) -> list[Subcategory | None]:
+        raise NotImplementedError()  # todo
+
+    async def save_subcategories(self, subcategory: Subcategory) -> None:
+        ...
 
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
         if by_bot:
