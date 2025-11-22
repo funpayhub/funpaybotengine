@@ -221,7 +221,7 @@ class EventCollector:
             logger.debug(
                 f'Chat {i.id} ({i.username}) initialized. Last message ID: {i.last_message_id}',
             )
-            await self.session_storage.save_chat_previews(i)
+        await self.session_storage.save_chat_previews(*result.chat_bookmarks.data.chat_previews)
 
     async def get_chat_changed_events(self) -> TotalEvents | None:
         logger.debug('Getting changed chats...')
@@ -233,12 +233,10 @@ class EventCollector:
         cached_chat_previews = await self.session_storage.get_chat_previews(
             *(i.id for i in runner_response.chat_bookmarks.data.chat_previews),
         )
-
-        for index, chat_preview in enumerate(
-            reversed(runner_response.chat_bookmarks.data.chat_previews),
+        for cached_chat, chat_preview in zip(
+            reversed(cached_chat_previews),
+            reversed(runner_response.chat_bookmarks.data.chat_previews)
         ):
-            cached_chat = cached_chat_previews[index]
-
             if cached_chat and cached_chat.last_message_id == chat_preview.last_message_id:
                 logger.debug(
                     f'Chat {chat_preview.id} ({chat_preview.username}) '
