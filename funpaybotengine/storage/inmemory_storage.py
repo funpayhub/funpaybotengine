@@ -121,15 +121,26 @@ class InMemoryStorage(Storage):
         # Categories/subcategories update should perform automatically by bot every 10-20 mins
         # and should not perform manually.
 
-        for new_sc in subcategories:
-            if not self._subcategories[new_sc.type].get(new_sc.id):
-                continue
+        to_replace: dict[Category, list[Subcategory]] = defaultdict(list)
 
-            cat = self._subcategories[new_sc.type][new_sc.id][1]
+        for new_subcategory in subcategories:
+            if not self._subcategories[new_subcategory.type].get(new_subcategory.id):
+                continue
+            cat = self._subcategories[new_subcategory.type][new_subcategory.id][1]
+            to_replace[cat].append(new_subcategory)
+
+        for cat, replacements in to_replace.items():
+            to_replace_ordered: dict[SubcategoryType, dict[int, Subcategory]] = defaultdict(dict)
+            # {SubcategoryType: {SubcategoryID: Subcategory obj}}
+            for i in replacements:
+                to_replace_ordered[i.type][i.id] = i
+
             new_cat = cat.model_copy(
                 update = {
                     'subcategories': tuple(
-                        old_sc if old_sc.id != new_sc.id or old_sc.type != new_sc.type else new_sc
+                        old_sc
+                        if old_sc.id not in to_replace_ordered[old_sc.type]
+                        else to_replace_ordered[old_sc.type][old_sc.id]
                         for old_sc in cat.subcategories
                     )
                 }
@@ -148,17 +159,22 @@ class InMemoryStorage(Storage):
         # and should not perform manually.
 
         ids = subcategory_ids or self._subcategories[subcategory_type].keys()
+        to_remove: dict[Category, set[int]] = defaultdict(set)
+
         for i in ids:
             data = self._subcategories[subcategory_type].get(i)
             if not data:
                 continue
 
-            subcat, cat = data
+            cat = self._subcategories[subcategory_type][i][1]
+            to_remove[cat].add(i)
+
+        for cat, ids_to_remove in to_remove.items():
             new_cat = cat.model_copy(
                 update = {
                     'subcategories': tuple(
                         old_sc for old_sc in cat.subcategories
-                        if old_sc.id != subcat.id or old_sc.type != subcat.type
+                        if old_sc.type != subcategory_type or old_sc.id not in ids_to_remove
                     )
                 }
             )
