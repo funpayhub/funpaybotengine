@@ -3,6 +3,7 @@ from __future__ import annotations
 
 __all__ = ('Storage',)
 
+
 from abc import ABC, abstractmethod
 
 from funpaybotengine.types import Category, Subcategory
@@ -44,6 +45,15 @@ class Storage(ABC):
         ...
 
     @abstractmethod
+    async def remove_chat_previews(self, *chat_ids: int) -> None:
+        """
+        Removes chat previews with provided chat IDs. If no chat IDs are provided,
+        removes all chat previews.
+
+        :param chat_ids: Chat IDs to remove. If not provided, all saved chat previews are removed.
+        """
+
+    @abstractmethod
     async def get_order_preview(self, order_id: str) -> OrderPreview | None:
         """
         Retrieve a single order preview.
@@ -75,6 +85,16 @@ class Storage(ABC):
         ...
 
     @abstractmethod
+    async def remove_order_previews(self, *order_ids: str) -> None:
+        """
+        Removes order previews with provided order IDs. If no order IDs are provided,
+        removes all order previews.
+
+        :param order_ids: Order IDs to remove. If not provided,
+        all saved order previews are removed.
+        """
+
+    @abstractmethod
     async def get_category(self, category_id: int) -> Category | None:
         """
         Retrieve a single category.
@@ -104,6 +124,16 @@ class Storage(ABC):
         :param categories: Categories to save.
         """
         ...
+
+    @abstractmethod
+    async def remove_categories(self, *category_ids: int) -> None:
+        """
+        Removes categories with provided category IDs. If no category IDs are provided,
+        removes all categories.
+
+        :param category_ids: Category IDs to remove. If not provided,
+        all saved categories are removed.
+        """
 
     @abstractmethod
     async def get_subcategory(
@@ -146,6 +176,22 @@ class Storage(ABC):
         :param subcategory: Subcategory to save.
         """
         ...
+
+    @abstractmethod
+    async def remove_subcategories(
+        self,
+        subcategory_type: SubcategoryType,
+        *subcategory_ids: int
+    ) -> None:
+        """
+        Removes subcategories with provided subcategory type and subcategory IDs.
+        If no subcategory IDs are provided, all saved subcategories are removed.
+
+
+        :param subcategory_type: Subcategory type to remove.
+        :param subcategory_ids: Subcategory IDs to remove. If not provided,
+        all saved subcategories of provided subcategory type are removed.
+        """
 
     @abstractmethod
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:

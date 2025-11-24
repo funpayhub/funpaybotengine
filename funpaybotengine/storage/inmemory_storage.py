@@ -6,6 +6,7 @@ from funpaybotengine.types import Category, Subcategory
 from funpaybotengine.types.chat import PrivateChatPreview
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.types.orders import OrderPreview
+from collections import defaultdict
 
 
 __all__ = ('InMemoryStorage',)
@@ -18,7 +19,9 @@ class InMemoryStorage(Storage):
         self._sent_by_bot: set[int] = set()
 
         self._categories: dict[int, Category] = {}
-        self._subcategories: dict[SubcategoryType, dict[int, tuple[Subcategory, Category | None]]] = {}
+        self._subcategories: dict[SubcategoryType, dict[int, tuple[Subcategory, Category]]] = (
+            defaultdict(dict)
+        )
 
     async def get_chat_preview(self, chat_id: int) -> PrivateChatPreview | None:
         return self._chats.get(chat_id)
@@ -32,6 +35,13 @@ class InMemoryStorage(Storage):
         for i in chats:
             self._chats[i.id] = i
 
+    async def remove_chat_previews(self, *chat_ids: int) -> None:
+        if chat_ids:
+            for i in chat_ids:
+                self._chats.pop(i, None)
+        else:
+            self._chats = {}
+
     async def get_order_preview(self, order_id: str) -> OrderPreview | None:
         return self._orders.get(order_id)
 
@@ -44,6 +54,13 @@ class InMemoryStorage(Storage):
         for i in orders:
             self._orders[i.id] = i
 
+    async def remove_order_previews(self, *order_ids: str) -> None:
+        if order_ids:
+            for i in order_ids:
+                self._orders.pop(i, None)
+        else:
+            self._orders = {}
+
     async def get_category(self, category_id: int) -> Category | None:
         return self._categories.get(category_id)
 
@@ -55,17 +72,25 @@ class InMemoryStorage(Storage):
     async def save_categories(self, *categories: Category) -> None:
         for category in categories:
             self._categories[category.id] = category
+        self._update_subcategories()
 
-            for subcat in category.subcategories:
-                inner = self._subcategories.setdefault(subcat.type, {})
+    async def remove_categories(self, *category_ids: int) -> None:
+        if category_ids:
+            for i in category_ids:
+                self._categories.pop(i, None)
+            self._update_subcategories()
+        else:
+            self._categories = {}
+            self._subcategories = defaultdict(dict)
 
-                existing = inner.get(subcat.id)
-                if existing:
-                    old_subcat, old_category = existing
-                    if old_subcat != subcat or old_category != category:
-                        inner[subcat.id] = (subcat, category)
-                else:
-                    inner[subcat.id] = (subcat, category)
+    def _update_subcategories(self) -> None:
+        total_dict: dict[SubcategoryType, dict[int, tuple[Subcategory, Category]]] = (
+            defaultdict(dict)
+        )
+        for cat in self._categories.values():
+            for subcat in cat.subcategories:
+                total_dict[subcat.type][subcat.id] = (subcat, cat)
+        self._subcategories = total_dict
 
     async def get_subcategory(
         self,
@@ -90,7 +115,55 @@ class InMemoryStorage(Storage):
             res = [inner[i][0] for i in inner]
         return res
 
-    async def save_subcategories(self, subcategory: Subcategory) -> None: ...
+    async def save_subcategories(self, *subcategories: Subcategory) -> None:
+        # Slow method is acceptable:
+        # FunPay has only ~200 categories and ~3000 subcategories
+        # Categories/subcategories update should perform automatically by bot every 10-20 mins
+        # and should not perform manually.
+
+        for new_sc in subcategories:
+            if not self._subcategories[new_sc.type].get(new_sc.id):
+                continue
+
+            cat = self._subcategories[new_sc.type][new_sc.id][1]
+            new_cat = cat.model_copy(
+                update = {
+                    'subcategories': tuple(
+                        old_sc if old_sc.id != new_sc.id or old_sc.type != new_sc.type else new_sc
+                        for old_sc in cat.subcategories
+                    )
+                }
+            )
+            self._categories[new_cat.id] = new_cat
+        self._update_subcategories()
+
+    async def remove_subcategories(
+        self,
+        subcategory_type: SubcategoryType,
+        *subcategory_ids: int
+    ) -> None:
+        # Slow method is acceptable:
+        # FunPay has only ~200 categories and ~3000 subcategories
+        # Categories/subcategories update should perform automatically by bot every 10-20 mins
+        # and should not perform manually.
+
+        ids = subcategory_ids or self._subcategories[subcategory_type].keys()
+        for i in ids:
+            data = self._subcategories[subcategory_type].get(i)
+            if not data:
+                continue
+
+            subcat, cat = data
+            new_cat = cat.model_copy(
+                update = {
+                    'subcategories': tuple(
+                        old_sc for old_sc in cat.subcategories
+                        if old_sc.id != subcat.id or old_sc.type != subcat.type
+                    )
+                }
+            )
+            self._categories[new_cat.id] = new_cat
+        self._update_subcategories()
 
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
         if by_bot:
