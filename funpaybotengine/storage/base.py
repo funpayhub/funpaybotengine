@@ -181,7 +181,7 @@ class Storage(ABC):
     async def remove_subcategories(
         self,
         subcategory_type: SubcategoryType,
-        *subcategory_ids: int
+        *subcategory_ids: int,
     ) -> None:
         """
         Removes subcategories with provided subcategory type and subcategory IDs.

@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+
+__all__ = ('Get2faStatus',)
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+from funpaybotengine.methods.base import FunPayMethod
+from funpaybotengine.client.session import HTTPMethod
+
+
+if TYPE_CHECKING:
+    from funpaybotengine.client import RawResponse
+
+
+class Get2faStatus(FunPayMethod[bool], BaseModel):
+    __model_to_build__ = bool
+
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            url='security/twoFactorSetting',
+            method=HTTPMethod.GET,
+            expected_status_codes=[200],
+            headers={},
+            data={},
+            allow_anonymous=False,
+            allow_uninitialized=False,
+        )
+
+    async def parse_result(self, response: RawResponse[bool]) -> bool:
+        return 'включить 2fa' not in response.raw_response.lower()
+
+    async def transform_result(self, parsing_result: bool, response: RawResponse[bool]) -> bool:
+        return parsing_result

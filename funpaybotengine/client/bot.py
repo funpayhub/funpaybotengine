@@ -42,6 +42,7 @@ from funpaybotengine.methods import (
     UploadImage,
     DeleteReview,
     FunPayMethod,
+    Get2faStatus,
     GetOrderPage,
     GetPurchases,
     RunnerRequest,
@@ -538,6 +539,9 @@ class Bot:
 
     async def check_banned(self) -> bool:
         return await CheckBanned().execute(self)
+
+    async def get_2fa_status(self) -> bool:
+        return await Get2faStatus().execute(self)
 
     async def make_request(
         self,

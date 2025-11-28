@@ -13,6 +13,7 @@ from .delete_review import *
 from .get_chat_page import *
 from .get_main_page import *
 from .get_purchases import *
+from .get_2fa_status import *
 from .get_order_page import *
 from .runner_request import *
 from .get_chat_history import *

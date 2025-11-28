@@ -93,10 +93,12 @@ class OrderPreviewsBatch(FunPayObject):
         if self.type is OrderPreviewType.UNKNOWN:
             raise ValueError('Unknown type')
 
+        bot = self.get_bound_bot()
+
         if self.type == OrderPreviewType.SALE:
-            method = self.get_bound_bot().get_sales
+            method = bot.get_sales
         else:
-            method = self.get_bound_bot().get_purchases
+            method = bot.get_purchases
 
         return await method(
             from_order_id=self.next_order_id,

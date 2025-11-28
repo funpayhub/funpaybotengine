@@ -66,8 +66,7 @@ class _MessageTypeFilter(Filter):
         )
 
     async def __call__(self, event: Event[Message]) -> bool:
-        r = event.object.meta.type is self.message_type
-        return r
+        return event.object.meta.type is self.message_type
 
 
 class MessageTypeFilter(_MessageTypeFilter):

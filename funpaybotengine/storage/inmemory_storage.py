@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from collections import defaultdict
+
 from funpayparsers.types import SubcategoryType
 
 from funpaybotengine.types import Category, Subcategory
 from funpaybotengine.types.chat import PrivateChatPreview
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.types.orders import OrderPreview
-from collections import defaultdict
 
 
 __all__ = ('InMemoryStorage',)
@@ -84,8 +85,8 @@ class InMemoryStorage(Storage):
             self._subcategories = defaultdict(dict)
 
     def _update_subcategories(self) -> None:
-        total_dict: dict[SubcategoryType, dict[int, tuple[Subcategory, Category]]] = (
-            defaultdict(dict)
+        total_dict: dict[SubcategoryType, dict[int, tuple[Subcategory, Category]]] = defaultdict(
+            dict,
         )
         for cat in self._categories.values():
             for subcat in cat.subcategories:
@@ -136,14 +137,14 @@ class InMemoryStorage(Storage):
                 to_replace_ordered[i.type][i.id] = i
 
             new_cat = cat.model_copy(
-                update = {
+                update={
                     'subcategories': tuple(
                         old_sc
                         if old_sc.id not in to_replace_ordered[old_sc.type]
                         else to_replace_ordered[old_sc.type][old_sc.id]
                         for old_sc in cat.subcategories
-                    )
-                }
+                    ),
+                },
             )
             self._categories[new_cat.id] = new_cat
         self._update_subcategories()
@@ -151,7 +152,7 @@ class InMemoryStorage(Storage):
     async def remove_subcategories(
         self,
         subcategory_type: SubcategoryType,
-        *subcategory_ids: int
+        *subcategory_ids: int,
     ) -> None:
         # Slow method is acceptable:
         # FunPay has only ~200 categories and ~3000 subcategories
@@ -171,12 +172,13 @@ class InMemoryStorage(Storage):
 
         for cat, ids_to_remove in to_remove.items():
             new_cat = cat.model_copy(
-                update = {
+                update={
                     'subcategories': tuple(
-                        old_sc for old_sc in cat.subcategories
+                        old_sc
+                        for old_sc in cat.subcategories
                         if old_sc.type != subcategory_type or old_sc.id not in ids_to_remove
-                    )
-                }
+                    ),
+                },
             )
             self._categories[new_cat.id] = new_cat
         self._update_subcategories()

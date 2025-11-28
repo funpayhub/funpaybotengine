@@ -18,4 +18,9 @@ class RunnerRequestError(FunPayBotEngineError):
         self.runner_response = runner_response
 
     def __str__(self) -> str:
-        return self.runner_response.response.error
+        response = self.runner_response.response
+
+        if not response or not response.error:
+            return 'Unknown error'
+
+        return response.error

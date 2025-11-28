@@ -38,4 +38,4 @@ class CalcChips(FunPayMethod[CalcResult], BaseModel):
         )
 
     async def parse_result(self, response: RawResponse[CalcResult]) -> dict[str, Any]:
-        return json.loads(response.raw_response)
+        return json.loads(response.raw_response)  # type: ignore

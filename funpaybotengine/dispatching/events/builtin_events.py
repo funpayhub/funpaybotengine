@@ -170,13 +170,14 @@ class ReviewEvent(FromMessageEvent):
 
     async def get_order_page(self, update: bool = False) -> OrderPage:
         if self._order_page is None or update:
-            self._order_page = await self.get_bound_bot().get_order_page(self.object.meta.order_id)
+            bot = self.get_bound_bot()
+            self._order_page = await bot.get_order_page(self.object.meta.order_id or '')
+
         return self._order_page
 
-    async def get_review(self, update: bool = False) -> Review:
-        if self._order_page is None or update:
-            await self.get_order_page()
-        return self._order_page.review
+    async def get_review(self, update: bool = False) -> Review | None:
+        order_page = await self.get_order_page(update)
+        return order_page.review
 
 
 class NewReviewEvent(ReviewEvent): ...

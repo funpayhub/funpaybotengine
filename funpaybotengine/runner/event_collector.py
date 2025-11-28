@@ -235,7 +235,7 @@ class EventCollector:
         )
         for cached_chat, chat_preview in zip(
             reversed(cached_chat_previews),
-            reversed(runner_response.chat_bookmarks.data.chat_previews)
+            reversed(runner_response.chat_bookmarks.data.chat_previews),
         ):
             if cached_chat and cached_chat.last_message_id == chat_preview.last_message_id:
                 logger.debug(
@@ -339,6 +339,10 @@ class EventCollector:
         for e in total.sales_related if mode == 'sales' else total.purchases_related:
             cls = _ORDER_RELATED[e.object.meta.type][0 if mode == 'sales' else 1]
             order_event: OrderEvent = cls(object=e.object, tag=e.tag).as_(self.bot)
+
+            if not e.object.meta.order_id:
+                continue
+
             order_event._order_preview = order_previews.get(e.object.meta.order_id)
             cm[e] = order_event
 

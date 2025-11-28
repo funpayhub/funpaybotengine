@@ -49,7 +49,7 @@ class AioHttpSession(BaseSession):
     async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.close()
 
     async def session(self) -> ClientSession:
@@ -157,12 +157,12 @@ class AioHttpSession(BaseSession):
         if URL(method_url).is_absolute():
             return method_url
 
+        locale = bot.locale
+
         if method.ignore_locale or bot is None:
             locale = Language.RU
         elif method.locale is not None:
             locale = method.locale
-        else:
-            locale = bot.locale
 
         if locale is None:
             locale = Language.RU
