@@ -5,8 +5,6 @@ __all__ = ('Get2faStatus',)
 
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
-
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
 
@@ -15,9 +13,7 @@ if TYPE_CHECKING:
     from funpaybotengine.client import RawResponse
 
 
-class Get2faStatus(FunPayMethod[bool], BaseModel):
-    __model_to_build__ = bool
-
+class Get2faStatus(FunPayMethod[bool]):
     def __init__(
         self,
     ) -> None:
@@ -37,6 +33,3 @@ class Get2faStatus(FunPayMethod[bool], BaseModel):
                 query = 'включить 2fa'
 
         return query not in response.raw_response.lower()
-
-    async def transform_result(self, parsing_result: bool, response: RawResponse[bool]) -> bool:
-        return parsing_result
