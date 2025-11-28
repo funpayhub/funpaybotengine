@@ -340,10 +340,7 @@ class EventCollector:
             cls = _ORDER_RELATED[e.object.meta.type][0 if mode == 'sales' else 1]
             order_event: OrderEvent = cls(object=e.object, tag=e.tag).as_(self.bot)
 
-            if not e.object.meta.order_id:
-                continue
-
-            order_event._order_preview = order_previews.get(e.object.meta.order_id)
+            order_event._order_preview = order_previews.get(e.object.meta.order_id or '')
             cm[e] = order_event
 
     async def make_order_events(self, total: TotalEvents) -> None:
