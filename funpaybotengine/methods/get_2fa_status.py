@@ -25,14 +25,18 @@ class Get2faStatus(FunPayMethod[bool], BaseModel):
             url='security/twoFactorSetting',
             method=HTTPMethod.GET,
             expected_status_codes=[200],
-            headers={},
-            data={},
             allow_anonymous=False,
             allow_uninitialized=False,
         )
 
     async def parse_result(self, response: RawResponse[bool]) -> bool:
-        return 'включить 2fa' not in response.raw_response.lower()
+        match self.locale.name:
+            case 'EN':
+                query = 'enable 2fa'
+            case _:
+                query = 'включить 2fa'
+
+        return query not in response.raw_response.lower()
 
     async def transform_result(self, parsing_result: bool, response: RawResponse[bool]) -> bool:
         return parsing_result

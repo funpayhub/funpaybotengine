@@ -8,7 +8,7 @@ from funpaybotengine.dispatching.routers.base import Router
 from funpaybotengine.dispatching.routers.dispatcher import Dispatcher
 
 
-__all__ = (
+__all__ = [
     'Bot',
     'BaseSession',
     'AioHttpSession',
@@ -16,4 +16,4 @@ __all__ = (
     'Dispatcher',
     'events',
     'filters',
-)
+]
