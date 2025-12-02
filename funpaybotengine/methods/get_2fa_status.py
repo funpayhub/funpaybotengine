@@ -29,7 +29,7 @@ class Get2faStatus(FunPayMethod[bool]):
         if self.locale.name == 'EN':
             query = 'enable 2fa'
         elif self.locale.name == 'UK':
-            query = ''
+            query = 'увімкнути 2fa'
         else:
             query = 'включить 2fa'
 
