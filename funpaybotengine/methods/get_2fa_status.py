@@ -26,9 +26,11 @@ class Get2faStatus(FunPayMethod[bool]):
         )
 
     async def parse_result(self, response: RawResponse[bool]) -> bool:
-        if self.locale.name == 'EN':
+        locale = response.executed_as.locale.name
+
+        if locale == 'EN':
             query = 'enable 2fa'
-        elif self.locale.name == 'UK':
+        elif locale == 'UK':
             query = 'увімкнути 2fa'
         else:
             query = 'включить 2fa'
