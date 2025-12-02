@@ -41,4 +41,4 @@ class CalcLots(FunPayMethod[CalcResult], BaseModel):
         )
 
     async def parse_result(self, response: RawResponse[CalcResult]) -> dict[str, Any]:
-        return json.loads(response.raw_response)  # type: ignore # 100% safe
+        return json.loads(response.raw_response)  # type: ignore # always dict
