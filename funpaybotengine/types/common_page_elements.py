@@ -79,3 +79,6 @@ class PageHeader(FunPayObject, BaseModel):
 
     sales_available: bool
     """Whether sales available or not."""
+
+    logout_token: str | None
+    """Logout token (available only for authorized users)."""

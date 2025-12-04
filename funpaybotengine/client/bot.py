@@ -31,6 +31,7 @@ from funpaybotengine.utils import (
 )
 from funpaybotengine.runner import Runner
 from funpaybotengine.methods import (
+    Logout,
     Refund,
     Review,
     CalcLots,
@@ -97,6 +98,7 @@ class Bot:
         self._golden_key = golden_key
         self._csrf_token: str | None = None
         self._phpsessid: str | None = phpsessid
+        self._logout_token: str | None = None
 
         self._locale: Language | None = None
         self._currency: Currency | None = None
@@ -167,6 +169,13 @@ class Bot:
         PHPSESSID. Available only after initialization (``Bot.update`` method).
         """
         return self._phpsessid
+    
+    @property
+    def logout_token(self) -> str | None:
+        """
+        Logout token. Available only after initialization (``Bot.update`` method).
+        """
+        return self._logout_token
 
     @property
     def userid(self) -> int | None:
@@ -334,6 +343,18 @@ class Bot:
 
     async def save_offer_fields(self, offer_fields: OfferFields) -> bool:
         return await SaveOfferFields(offer_fields=offer_fields).execute(self)
+    
+    async def calc_chips(self, game_id: int, price: float) -> CalcResult:
+        return await CalcChips(game_id=game_id, price=price).execute(self)
+
+    async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
+        return await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
+    
+    async def logout(self) -> bool:
+        if self.logout_token is None:
+            await self.update()
+
+        return await Logout(logout_token=self.logout_token).execute(self) # type: ignore # will raise UnauthorizedError after self.update
 
     # ----- Getters -----
     async def get_chat_history(
@@ -433,12 +454,6 @@ class Bot:
         )
 
         return await method.execute(self)
-
-    async def calc_chips(self, game_id: int, price: float) -> CalcResult:
-        return await CalcChips(game_id=game_id, price=price).execute(self)
-
-    async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
-        return await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
 
     @overload
     async def get_offer_fields(
@@ -566,14 +581,17 @@ class Bot:
             skip_initialization=True,
         )
 
-        self._csrf_token = result.response_obj.app_data.csrf_token
+        page_obj = result.response_obj
+
+        self._csrf_token = page_obj.app_data.csrf_token
         self._phpsessid = result.cookies.get('PHPSESSID')
+        self._logout_token = page_obj.header.logout_token
 
-        self._locale = result.response_obj.app_data.locale
-        self._currency = result.response_obj.header.currency
-
-        self._userid = result.response_obj.header.user_id
-        self._username = result.response_obj.header.username
+        self._locale = page_obj.app_data.locale
+        
+        self._currency = page_obj.header.currency
+        self._userid = page_obj.header.user_id
+        self._username = page_obj.header.username
 
         self._session_updated_at = int(time.time())
         return self
