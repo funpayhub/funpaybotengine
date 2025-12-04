@@ -9,7 +9,7 @@ dependencies = [
     "aiohttp-socks>=0.10.1",
     "colorama>=0.4.6",
     "eventry",
-    "funpayparsers>=0.5.2",
+    "funpayparsers>=0.5.3",
     "pydantic>=2.11.7",
 ]
 
