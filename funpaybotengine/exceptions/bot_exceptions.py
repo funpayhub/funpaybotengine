@@ -4,6 +4,8 @@ from __future__ import annotations
 __all__ = (
     'BotNotBoundError',
     'BotNotInitializedError',
+    'BotUnauthorizedError',
+    'UserBannedError',
 )
 
 from typing import TYPE_CHECKING, Any
@@ -27,4 +29,18 @@ class BotNotInitializedError(FunPayBotEngineError, RuntimeError):
     def __init__(self, bot: Bot) -> None:
         super().__init__(
             f'Bot instance {bot} is not initialized.\nUse `await bot.update()` to initialize it.',
+        )
+
+
+class BotUnauthorizedError(FunPayBotEngineError, RuntimeError):
+    def __init__(self) -> None:
+        super().__init__(
+            f'Bot instance is not authorized due to invalid golden key (maybe it is expired?).', # maybe you are an idiot?
+        )
+
+
+class UserBannedError(FunPayBotEngineError, RuntimeError):
+    def __init__(self) -> None:
+        super().__init__(
+            f'Current account is banned.',
         )

@@ -69,6 +69,7 @@ from funpaybotengine.types.pages import (
     ProfilePage,
     SettingsPage,
     SubcategoryPage,
+    FunPayPage
 )
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.runner.config import RunnerConfig
@@ -83,6 +84,7 @@ from funpaybotengine.client.session.base import Response
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
+from funpaybotengine.exceptions import BotUnauthorizedError, UserBannedError
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
@@ -612,9 +614,18 @@ class Bot:
             await self.update()
 
         result = await self.session.make_request(method, self)
+
+        if isinstance(result.response_obj, FunPayPage):
+            if self._golden_key and not result.response_obj.header.avatar_url:
+                raise BotUnauthorizedError()
+
+        if (method.url != 'account/blocked') and ('account/blocked' in result.url):
+            raise UserBannedError()
+
         if 'PHPSESSID' in result.cookies:
             self._phpsessid = result.cookies['PHPSESSID']
             self._session_updated_at = int(time.time())
+
         return result
 
     async def update(self, change_locale: Language | None = None) -> Self:
