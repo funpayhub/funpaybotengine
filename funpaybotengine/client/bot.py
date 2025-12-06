@@ -56,8 +56,9 @@ from funpaybotengine.methods import (
     SaveOfferFields,
     MethodReturnType,
     GetSubcategoryPage,
+    UpdateNoticeChannel,
 )
-from funpaybotengine.types.enums import OrderStatus, SubcategoryType
+from funpaybotengine.types.enums import OrderStatus, NoticeChannel, SubcategoryType
 from funpaybotengine.types.pages import (
     ChatPage,
     MainPage,
@@ -359,6 +360,22 @@ class Bot:
             await self.update()
 
         return await Logout(logout_token=self.logout_token).execute(self)  # type: ignore # will raise UnauthorizedError after self.update
+
+    async def set_notification_status(self, enabled: bool, channel: NoticeChannel) -> bool:
+        return await UpdateNoticeChannel(enabled=enabled, channel=channel).execute(self)
+
+    async def set_telegram_notification_status(self, enabled: bool) -> bool:
+        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
+            self
+        )
+
+    async def set_push_notification_status(self, enabled: bool) -> bool:
+        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.PUSH).execute(self)
+
+    async def set_email_notification_status(self, enabled: bool) -> bool:
+        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
+            self
+        )
 
     # ----- Getters -----
     async def get_chat_history(

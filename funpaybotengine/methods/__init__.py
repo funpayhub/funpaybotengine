@@ -24,3 +24,4 @@ from .get_transactions import *
 from .get_settings_page import *
 from .save_offer_fields import *
 from .get_subcategory_page import *
+from .update_notice_channel import *
