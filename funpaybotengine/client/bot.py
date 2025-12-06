@@ -47,6 +47,7 @@ from funpaybotengine.methods import (
     Get2faStatus,
     GetOrderPage,
     GetPurchases,
+    UploadAvatar,
     RunnerRequest,
     GetChatHistory,
     GetOfferFields,
@@ -248,6 +249,9 @@ class Bot:
         :return: Unique FunPay image ID assigned to the uploaded image.
         """
         return await UploadImage(file=file).execute(self)
+
+    async def upload_avatar(self, file: str | BytesIO) -> bool:
+        return await UploadAvatar(file=file).execute(self)
 
     @overload
     async def send_message(
