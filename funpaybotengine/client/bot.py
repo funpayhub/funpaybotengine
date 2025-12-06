@@ -17,6 +17,7 @@ from funpaybotengine.types import (
     Message,
     Currency,
     Language,
+    Settings,
     CalcResult,
     OfferFields,
     Subcategory,
@@ -50,6 +51,7 @@ from funpaybotengine.methods import (
     GetChatHistory,
     GetOfferFields,
     GetProfilePage,
+    GetSettingPage,
     GetTransactions,
     SaveOfferFields,
     MethodReturnType,
@@ -61,6 +63,7 @@ from funpaybotengine.types.pages import (
     MainPage,
     OrderPage,
     ProfilePage,
+    SettingsPage,
     SubcategoryPage,
 )
 from funpaybotengine.storage.base import Storage
@@ -552,11 +555,17 @@ class Bot:
     async def get_order_page(self, order_id: str) -> OrderPage:
         return await GetOrderPage(order_id=order_id).execute(self)
 
-    async def check_banned(self) -> bool:
-        return await CheckBanned().execute(self)
+    async def get_settings_page(self) -> SettingsPage:
+        return await GetSettingPage().execute(self)
+
+    async def get_settings(self) -> Settings:
+        return (await self.get_settings_page()).settings
 
     async def get_2fa_status(self) -> bool:
         return await Get2faStatus().execute(self)
+
+    async def check_banned(self) -> bool:
+        return await CheckBanned().execute(self)
 
     async def make_request(
         self,

@@ -21,5 +21,6 @@ from .get_chat_history import *
 from .get_offer_fields import *
 from .get_profile_page import *
 from .get_transactions import *
+from .get_settings_page import *
 from .save_offer_fields import *
 from .get_subcategory_page import *
