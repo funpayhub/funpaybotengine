@@ -23,6 +23,7 @@ from .get_profile_page import *
 from .get_transactions import *
 from .get_settings_page import *
 from .save_offer_fields import *
+from .set_offers_hidden import *
 from .get_subcategory_page import *
 from .update_notice_channel import *
 from .get_telegram_connect_url import *

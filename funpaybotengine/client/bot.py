@@ -54,6 +54,7 @@ from funpaybotengine.methods import (
     GetSettingPage,
     GetTransactions,
     SaveOfferFields,
+    SetOffersHidden,
     MethodReturnType,
     GetSubcategoryPage,
     UpdateNoticeChannel,
@@ -377,6 +378,9 @@ class Bot:
         return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
             self,
         )
+
+    async def set_offers_hidden(self, hidden: bool) -> bool:
+        return await SetOffersHidden(hidden=hidden).execute(self)
 
     # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
