@@ -57,6 +57,7 @@ from funpaybotengine.methods import (
     MethodReturnType,
     GetSubcategoryPage,
     UpdateNoticeChannel,
+    GetTelegramConnectURL,
 )
 from funpaybotengine.types.enums import OrderStatus, NoticeChannel, SubcategoryType
 from funpaybotengine.types.pages import (
@@ -366,7 +367,7 @@ class Bot:
 
     async def set_telegram_notification_status(self, enabled: bool) -> bool:
         return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
-            self
+            self,
         )
 
     async def set_push_notification_status(self, enabled: bool) -> bool:
@@ -374,10 +375,13 @@ class Bot:
 
     async def set_email_notification_status(self, enabled: bool) -> bool:
         return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
-            self
+            self,
         )
 
     # ----- Getters -----
+    async def get_telegram_connect_url(self) -> str:
+        return await GetTelegramConnectURL().execute(self)
+
     async def get_chat_history(
         self,
         chat_id: int | str,
