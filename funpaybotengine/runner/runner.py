@@ -9,6 +9,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any
 from collections.abc import AsyncGenerator
 
+from funpaybotengine.exceptions import UnauthorizedError
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.runner.event_collector import EventCollector
@@ -43,12 +44,27 @@ class Runner:
 
         while True:
             start = time.time()
-            result = await collector.get_events()
+
+            try:
+                result = await collector.get_events()
+            except UnauthorizedError as e:
+                if config.on_unauthorized_error_policy == 'event':
+                    ...
+                elif config.on_unauthorized_error_policy == 'stop':
+                    return
+                elif config.on_unauthorized_error_policy == 'stop+event':
+                    return # todo yield event
+                await _sleep(start, config.interval)
+                continue
 
             events_stack = tuple(result)
             for i in events_stack:
                 yield i, events_stack
 
-            time_to_sleep = config.interval - (time.time() - start)
-            if time_to_sleep > 0:
-                await asyncio.sleep(time_to_sleep)
+            await _sleep(start, config.interval)
+
+
+async def _sleep(start_time: int | float, interval: int | float):
+    time_to_sleep = interval - (time.time() - start_time)
+    if time_to_sleep > 0:
+        await asyncio.sleep(time_to_sleep)
