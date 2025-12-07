@@ -30,11 +30,15 @@ class UploadImage(FunPayMethod[int], BaseModel):
     """Image stream or path to image to upload."""
 
     def __init__(self, file: str | BytesIO, locale: Language | None = None):
+        if isinstance(file, str):
+            with open(file, 'rb') as f:
+                file = BytesIO(f.read())
+
         super().__init__(
             url='file/addChatImage',
             method=HTTPMethod.POST,
             locale=locale,
-            data={'file': open(file, 'rb') if isinstance(file, str) else file},
+            data={'file': file},
             headers={'X-Requested-With': 'XMLHttpRequest'},
             file=file,
         )

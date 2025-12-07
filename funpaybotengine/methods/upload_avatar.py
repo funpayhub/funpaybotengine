@@ -26,10 +26,14 @@ class UploadAvatar(FunPayMethod[bool], BaseModel):
     """Image stream or path to image to upload."""
 
     def __init__(self, file: str | BytesIO):
+        if isinstance(file, str):
+            with open(file, 'rb') as f:
+                file = BytesIO(f.read())
+
         super().__init__(
             url='file/avatar',
             method=HTTPMethod.POST,
-            data={'file': open(file, 'rb') if isinstance(file, str) else file},
+            data={'file': file},
             headers={'X-Requested-With': 'XMLHttpRequest'},
             file=file,
         )
