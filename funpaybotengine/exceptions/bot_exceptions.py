@@ -35,7 +35,7 @@ class BotNotInitializedError(FunPayBotEngineError, RuntimeError):
 class BotUnauthorizedError(FunPayBotEngineError, RuntimeError):
     def __init__(self) -> None:
         super().__init__(
-            f'Bot instance is not authorized due to invalid golden key (maybe it is expired?).', # maybe you are an idiot?
+            f'Invalid golden key (maybe it is expired?).',
         )
 
 
