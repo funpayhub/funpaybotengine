@@ -61,20 +61,22 @@ from funpaybotengine.methods import (
     UpdateNoticeChannel,
     GetTelegramConnectURL,
 )
+from funpaybotengine.exceptions import UserBannedError, BotUnauthorizedError
 from funpaybotengine.types.enums import OrderStatus, NoticeChannel, SubcategoryType
 from funpaybotengine.types.pages import (
     ChatPage,
     MainPage,
     OrderPage,
+    FunPayPage,
     ProfilePage,
     SettingsPage,
     SubcategoryPage,
-    FunPayPage
 )
 from funpaybotengine.storage.base import Storage
 from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.types.requests import (
     Action,
+    RequestNodeInfo,
     NodeRequestObject,
     RequestableObject,
     SendMessageAction,
@@ -388,6 +390,69 @@ class Bot:
     async def set_offers_hidden(self, hidden: bool) -> bool:
         return await SetOffersHidden(hidden=hidden).execute(self)
 
+    # ----- Runner shortcuts -----
+    @overload
+    async def get_chat_messages(
+        self,
+        *,
+        chat_id: int | str,
+        after_message_id: int | None = None,
+    ) -> list[Message]: ...
+
+    @overload
+    async def get_chat_messages(
+        self,
+        *args: tuple[int | str, int | None],
+        chat_id: None = None,
+        after_message_id: None = None,
+    ) -> dict[int, list[Message]]: ...
+
+    async def get_chat_messages(
+        self,
+        *args: tuple[int | str, int | None],
+        chat_id: int | str | None = None,
+        after_message_id: int | None = None,
+    ) -> list[Message] | dict[int, list[Message]]:
+        """
+        Retrieves the 100 most recent messages in a chat,
+        sent after the specified message ID.
+
+        :param chat_id: Chat ID.
+        :param after_message_id: Message ID to paginate history **forwards from** (exclusive).
+            Messages with IDs **greater than** this one will be returned,
+            i.e. history will be fetched in forward order *after* this message.
+
+        :param args: Tuple of (chat_id, after_message_id)
+
+        :returns: The resulting message objects.
+        """
+        if not args and chat_id is None:
+            raise ValueError('Either `chat_id` or `args` must be provided.')
+
+        if args:
+            objects = [
+                NodeRequestObject(
+                    chat_id=arg[0],
+                    data=RequestNodeInfo(chat_id=arg[0], after_message_id=arg[1] or 0),
+                )
+                for arg in args
+            ]
+        else:
+            objects = [
+                NodeRequestObject(
+                    chat_id=chat_id,
+                    data=RequestNodeInfo(chat_id=chat_id, after_message_id=after_message_id or 0),
+                ),
+            ]
+
+        response = await self.runner_request(objects_to_request=objects)
+        if not response.nodes:
+            return {} if args else []
+
+        if args:
+            return {obj.data.node.id: obj.data.messages for obj in response.nodes}
+        return response.nodes[0].data.messages
+
     # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
         return await GetTelegramConnectURL().execute(self)
@@ -401,16 +466,12 @@ class Bot:
         Retrieves the 100 most recent messages in a chat,
         sent before the specified message ID.
 
-        Also marks the chat as read.
+        :param chat_id: Chat ID.
+        :param before_message_id: Message ID to paginate history **backwards from** (exclusive).
+            Messages with IDs **lower than** this one will be returned,
+            i.e. history will be fetched in reverse order *before* this message.
 
-        :param chat_id: Chat ID or name.
-        :param before_message_id:
-            Message ID to paginate from —
-            only messages sent **before** this ID will be returned.
-            Defaults to ``-1``
-            to fetch the most recent messages.
-
-        :return: A list of up to 100 ``Message`` objects, sorted from oldest to newest.
+        :returns: The resulting message objects.
         """
         return await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
             self,

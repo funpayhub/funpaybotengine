@@ -35,12 +35,12 @@ class BotNotInitializedError(FunPayBotEngineError, RuntimeError):
 class BotUnauthenticatedError(FunPayBotEngineError, RuntimeError):
     def __init__(self) -> None:
         super().__init__(
-            f'Invalid golden key (maybe it is expired?).',
+            'Invalid golden key (maybe it is expired?).',
         )
 
 
 class UserBannedError(FunPayBotEngineError, RuntimeError):
     def __init__(self) -> None:
         super().__init__(
-            f'Current account is banned.',
+            'Current account is banned.',
         )
