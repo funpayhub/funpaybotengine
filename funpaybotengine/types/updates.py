@@ -13,7 +13,7 @@ __all__ = (
 )
 
 import time
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, Literal
 from types import MappingProxyType
 from collections.abc import Mapping
 
@@ -123,7 +123,7 @@ class RunnerResponseObject(FunPayObject, BaseModel, Generic[UpdateData]):
     tag: str
     """Runner tag."""
 
-    data: UpdateData
+    data: UpdateData | Literal[False]
     """Runner object data."""
 
 
@@ -139,7 +139,7 @@ class RunnerResponse(FunPayObject, BaseModel):
     chat_bookmarks: RunnerResponseObject[ChatBookmarks] | None
     """Chat bookmarks data."""
 
-    cpu: RunnerResponseObject[CurrentlyViewingOfferInfo] | None
+    cpu: tuple[RunnerResponseObject[CurrentlyViewingOfferInfo], ...] | None
     """Currently viewing offer info."""
 
     nodes: tuple[RunnerResponseObject[ChatNode], ...] | None

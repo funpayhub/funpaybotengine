@@ -404,7 +404,7 @@ class Bot:
         if not response.chat_counter:
             return 0
 
-        return response.chat_counter.data.counter
+        return response.chat_counter.data.counter # type: ignore # will have data
 
     async def get_active_orders_amount(self) -> tuple[int, int]:
         """
@@ -415,7 +415,7 @@ class Bot:
         if not response.orders_counters:
             return (0, 0)
 
-        return response.orders_counters.data.purchases, response.orders_counters.data.sales
+        return response.orders_counters.data.purchases, response.orders_counters.data.sales # type: ignore # will have data
 
     async def get_recent_chat_previews(self) -> list[PrivateChatPreview]:
         """
@@ -426,7 +426,7 @@ class Bot:
         if not response.chat_bookmarks:
             return []
 
-        return response.chat_bookmarks.data.chat_previews
+        return response.chat_bookmarks.data.chat_previews # type: ignore # will have data
 
     @overload
     async def get_chat_messages(
@@ -487,8 +487,8 @@ class Bot:
             return {} if args else []
 
         if args:
-            return {obj.data.node.id: obj.data.messages for obj in response.nodes}
-        return response.nodes[0].data.messages
+            return {obj.data.node.id: obj.data.messages for obj in response.nodes} # type: ignore # todo
+        return response.nodes[0].data.messages # type: ignore # todo
 
     # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
