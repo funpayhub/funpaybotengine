@@ -5,6 +5,7 @@ __all__ = ('RunnerConfig',)
 
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass
@@ -18,5 +19,31 @@ class RunnerConfig:
     """
 
     discover_sales: bool = True
+    """Whether to discover new sales or not."""
+
     discover_purchases: bool = True
+    """Whether to discover new purchases or not."""
+
     keep_unread: bool = False
+    """
+    Whether to preserve the unread status of chats when getting updates.
+
+    If ``False`` (default), a batch method is used: up to 10 chats can be requested in a single
+    request, but they will be marked as read.
+
+    If ``True``, only one chat can be fetched per request to keep it unread.  
+    With high incoming message volume this leads to many requests and may cause
+    ``429 Too Many Requests`` errors.
+    """
+
+    on_unauthorized_error_policy: Literal['ignore', 'event', 'stop', 'stop+event'] = 'ignore'
+    """
+    What to do when an `UnauthorizedError` occurred during fetching updates process?
+    
+    - ``ignore``: ignore the error and continue fetching updates.
+    - ``event``: yield an error event and continue fetching updates.
+    - ``stop``: stop fetching updates, exit a function.
+    - ``stop+event``: yield an error event and stop fetching updates, exit a function.
+    
+    Defaults to ``ignore``.
+    """
