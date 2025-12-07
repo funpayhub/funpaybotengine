@@ -23,6 +23,7 @@ from funpaybotengine.types import (
     Subcategory,
     RunnerResponse,
     OrderPreviewsBatch,
+    PrivateChatPreview,
     TransactionPreviewsBatch,
 )
 from funpaybotengine.utils import (
@@ -81,6 +82,9 @@ from funpaybotengine.types.requests import (
     RequestableObject,
     SendMessageAction,
     SendingMessageData,
+    ChatCounterRequestObject,
+    ChatBookmarksRequestObject,
+    OrdersCountersRequestObject,
 )
 from funpaybotengine.client.session.base import Response
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
@@ -391,6 +395,39 @@ class Bot:
         return await SetOffersHidden(hidden=hidden).execute(self)
 
     # ----- Runner shortcuts -----
+    async def get_unread_chats_amount(self) -> int:
+        """
+        Returns the amount of unread chats
+        """
+        response = await self.runner_request(objects_to_request=[ChatCounterRequestObject()])
+
+        if not response.chat_counter:
+            return 0
+
+        return response.chat_counter.data.counter
+
+    async def get_active_orders_amount(self) -> tuple[int, int]:
+        """
+        Returns the amount of active orders (purchases, sales)
+        """
+        response = await self.runner_request(objects_to_request=[OrdersCountersRequestObject()])
+
+        if not response.orders_counters:
+            return (0, 0)
+
+        return response.orders_counters.data.purchases, response.orders_counters.data.sales
+
+    async def get_recent_chat_previews(self) -> list[PrivateChatPreview]:
+        """
+        Returns the list of recent chat previews
+        """
+        response = await self.runner_request(objects_to_request=[ChatBookmarksRequestObject()])
+
+        if not response.chat_bookmarks:
+            return []
+
+        return response.chat_bookmarks.data.chat_previews
+
     @overload
     async def get_chat_messages(
         self,
