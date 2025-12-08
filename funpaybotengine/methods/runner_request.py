@@ -42,6 +42,9 @@ class RunnerRequest(FunPayMethod[RunnerResponse], BaseModel):
         action: Action | Literal[False] = False,
         locale: Language | None = None,
     ):
+        if objects_to_request and len(objects_to_request) > 10:
+            raise ValueError(f'Too many objects to request ({len(objects_to_request)} > 10).')
+
         super().__init__(
             url='runner/',
             method=HTTPMethod.POST,

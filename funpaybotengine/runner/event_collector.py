@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import logging
 import time
+import logging
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
 from collections.abc import Callable
 
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
-from funpaybotengine.exceptions import BotUnauthenticatedError, UnauthorizedError
+from funpaybotengine.exceptions import UnauthorizedError, BotUnauthenticatedError
 from funpaybotengine.dispatching import RunnerEvent
 from funpaybotengine.types.enums import MessageType, OrderPreviewType
 from funpaybotengine.runner.config import RunnerConfig
@@ -187,7 +187,7 @@ class EventCollector:
                 objects_to_request=[
                     ChatBookmarksRequestObject(),
                     OrdersCountersRequestObject(),
-                ]
+                ],
             )
             if not result.orders_counters or not result.orders_counters.data:
                 raise BotUnauthenticatedError()
@@ -290,15 +290,18 @@ class EventCollector:
                 if from_id != 0 and from_id < message.id <= to_id:
                     logger.debug(
                         'New message in chat %s: %s (from IDs difference).',
-                        chat_event.chat_preview.id, message.id,
+                        chat_event.chat_preview.id,
+                        message.id,
                     )
                 elif (
                     message.timestamp >= self.last_chats_request_timestamp and message.id <= to_id
                 ):
                     logger.debug(
                         'New message in chat %s: %s (from timestamp difference: %s >= %s).',
-                        chat_event.chat_preview.id, message.id, message.timestamp,
-                        self.last_chats_request_timestamp
+                        chat_event.chat_preview.id,
+                        message.id,
+                        message.timestamp,
+                        self.last_chats_request_timestamp,
                     )
                 else:
                     continue

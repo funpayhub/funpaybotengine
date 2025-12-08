@@ -408,7 +408,9 @@ class Bot:
 
     @overload
     async def get_currently_viewing_offer(
-        self, *, user_id: int
+        self,
+        *,
+        user_id: int,
     ) -> CurrentlyViewingOfferInfo | bool: ...
 
     async def get_currently_viewing_offer(
@@ -421,9 +423,6 @@ class Bot:
         """
         if not user_ids and user_id is None:
             raise ValueError('Either `user_ids` or `user_id` must be provided.')
-        
-        if len(user_ids) > 10:
-            raise ValueError('Too many user_ids provided (`user_ids` must contain no more than 10 items).')
 
         if user_ids:
             objects = [CPURequestObject(id=user_id) for user_id in user_ids]
@@ -509,9 +508,6 @@ class Bot:
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
-        
-        if len(args) > 10:
-            raise ValueError('Too many arguments provided (`args` must contain no more than 10 tuples).')
 
         if args:
             objects = [
