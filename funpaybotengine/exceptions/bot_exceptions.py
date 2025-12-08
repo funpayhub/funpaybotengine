@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = (
     'BotNotBoundError',
     'BotNotInitializedError',
-    'BotUnauthorizedError',
+    'BotUnauthenticatedError',
     'UserBannedError',
 )
 
@@ -32,7 +32,7 @@ class BotNotInitializedError(FunPayBotEngineError, RuntimeError):
         )
 
 
-class BotUnauthorizedError(FunPayBotEngineError, RuntimeError):
+class BotUnauthenticatedError(FunPayBotEngineError, RuntimeError):
     def __init__(self) -> None:
         super().__init__(
             f'Invalid golden key (maybe it is expired?).',

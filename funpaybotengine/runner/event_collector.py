@@ -4,7 +4,7 @@ import time
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
 from collections.abc import Callable
 
-from funpaybotengine.exceptions import BotUnauthorizedError
+from funpaybotengine.exceptions import BotUnauthenticatedError
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
 from funpaybotengine.dispatching import RunnerEvent
@@ -182,7 +182,7 @@ class EventCollector:
                     OrdersCountersRequestObject()
                 ])
             if not result.orders_counters or not result.orders_counters.data:
-                raise BotUnauthorizedError()
+                raise BotUnauthenticatedError()
             return result
 
     @attempts()

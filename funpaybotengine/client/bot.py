@@ -84,7 +84,7 @@ from funpaybotengine.client.session.base import Response
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
-from funpaybotengine.exceptions import BotUnauthorizedError, UserBannedError
+from funpaybotengine.exceptions import BotUnauthenticatedError, UserBannedError
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
@@ -617,7 +617,7 @@ class Bot:
 
         if isinstance(result.response_obj, FunPayPage):
             if self._golden_key and not result.response_obj.header.avatar_url:
-                raise BotUnauthorizedError()
+                raise BotUnauthenticatedError()
 
         if (method.url != 'account/blocked') and ('account/blocked' in result.url):
             raise UserBannedError()
