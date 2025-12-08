@@ -4,14 +4,18 @@ import time
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
 from collections.abc import Callable
 
-from funpaybotengine.exceptions import BotUnauthenticatedError
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
+from funpaybotengine.exceptions import BotUnauthenticatedError
 from funpaybotengine.dispatching import RunnerEvent
 from funpaybotengine.types.enums import MessageType, OrderPreviewType
 from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.types.messages import Message
-from funpaybotengine.types.requests.runner import NodeRequestObject, ChatBookmarksRequestObject, OrdersCountersRequestObject
+from funpaybotengine.types.requests.runner import (
+    NodeRequestObject,
+    ChatBookmarksRequestObject,
+    OrdersCountersRequestObject,
+)
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.exceptions.session_exceptions import UnexpectedHTTPStatusError
 from funpaybotengine.dispatching.events.builtin_events import (
@@ -179,8 +183,9 @@ class EventCollector:
             result = await self.bot.runner_request(
                 objects_to_request=[
                     ChatBookmarksRequestObject(),
-                    OrdersCountersRequestObject()
-                ])
+                    OrdersCountersRequestObject(),
+                ]
+            )
             if not result.orders_counters or not result.orders_counters.data:
                 raise BotUnauthenticatedError()
             return result

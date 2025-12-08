@@ -63,7 +63,10 @@ from funpaybotengine.methods import (
     UpdateNoticeChannel,
     GetTelegramConnectURL,
 )
-from funpaybotengine.exceptions import UserBannedError, BotUnauthorizedError
+from funpaybotengine.exceptions import (
+    UserBannedError,
+    BotUnauthenticatedError,
+)
 from funpaybotengine.types.enums import OrderStatus, NoticeChannel, SubcategoryType
 from funpaybotengine.types.pages import (
     ChatPage,
@@ -92,7 +95,6 @@ from funpaybotengine.client.session.base import Response
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
-from funpaybotengine.exceptions import BotUnauthenticatedError, UserBannedError
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
@@ -399,14 +401,20 @@ class Bot:
     # ----- Runner shortcuts -----
     @overload
     async def get_recently_seen_offer(
-        self, *user_ids: int, user_id: None = None,
+        self,
+        *user_ids: int,
+        user_id: None = None,
     ) -> dict[int, CurrentlyViewingOfferInfo | bool]: ...
 
     @overload
-    async def get_recently_seen_offer(self, *, user_id: int) -> CurrentlyViewingOfferInfo | bool: ...
+    async def get_recently_seen_offer(
+        self, *, user_id: int
+    ) -> CurrentlyViewingOfferInfo | bool: ...
 
     async def get_recently_seen_offer(
-        self, *user_ids: int, user_id: int | None = None,
+        self,
+        *user_ids: int,
+        user_id: int | None = None,
     ) -> dict[int, CurrentlyViewingOfferInfo | bool] | CurrentlyViewingOfferInfo | bool:
         """
         Returns the last offer that the user has seen recently

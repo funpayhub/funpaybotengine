@@ -47,13 +47,13 @@ class Runner:
 
             try:
                 result = await collector.get_events()
-            except UnauthorizedError as e:
+            except UnauthorizedError:
                 if config.on_unauthenticated_error_policy == 'event':
                     ...
                 elif config.on_unauthenticated_error_policy == 'stop':
                     return
                 elif config.on_unauthenticated_error_policy == 'stop+event':
-                    return # todo yield event
+                    return  # todo yield event
                 await _sleep(start, config.interval)
                 continue
 
