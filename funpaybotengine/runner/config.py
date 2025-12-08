@@ -36,9 +36,9 @@ class RunnerConfig:
     ``429 Too Many Requests`` errors.
     """
 
-    on_unauthorized_error_policy: Literal['ignore', 'event', 'stop', 'stop+event'] = 'ignore'
+    on_unauthenticated_error_policy: Literal['ignore', 'event', 'stop', 'stop+event'] = 'ignore'
     """
-    What to do when an `UnauthorizedError` occurred during fetching updates process?
+    What to do when an `BotUnauthenticatedError` occurred during fetching updates process?
     
     - ``ignore``: ignore the error and continue fetching updates.
     - ``event``: yield an error event and continue fetching updates.
