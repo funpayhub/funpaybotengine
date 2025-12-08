@@ -505,7 +505,7 @@ class Bot:
 
         :param args: Tuple of (chat_id, after_message_id)
 
-        :returns: The resulting message objects.
+        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects, sorted from oldest to newest.
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
@@ -555,7 +555,7 @@ class Bot:
             Messages with IDs **lower than** this one will be returned,
             i.e. history will be fetched in reverse order *before* this message.
 
-        :returns: The resulting message objects.
+        :returns: A list of up to 100 ``Message`` objects, sorted from newest to oldest.
         """
         return await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
             self,
