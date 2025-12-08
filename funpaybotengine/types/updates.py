@@ -13,7 +13,7 @@ __all__ = (
 )
 
 import time
-from typing import Any, Generic, TypeVar, Literal
+from typing import Any, Generic, Literal, TypeVar
 from types import MappingProxyType
 from collections.abc import Mapping
 

@@ -25,6 +25,7 @@ from funpaybotengine.types import (
     OrderPreviewsBatch,
     PrivateChatPreview,
     TransactionPreviewsBatch,
+    CurrentlyViewingOfferInfo,
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -78,6 +79,7 @@ from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.types.requests import (
     Action,
     RequestNodeInfo,
+    CPURequestObject,
     NodeRequestObject,
     RequestableObject,
     SendMessageAction,
@@ -395,6 +397,34 @@ class Bot:
         return await SetOffersHidden(hidden=hidden).execute(self)
 
     # ----- Runner shortcuts -----
+    @overload
+    async def get_recently_seen_offer(
+        self, *user_ids: int, user_id: None = None,
+    ) -> dict[int, CurrentlyViewingOfferInfo | bool]: ...
+
+    @overload
+    async def get_recently_seen_offer(self, *, user_id: int) -> CurrentlyViewingOfferInfo | bool: ...
+
+    async def get_recently_seen_offer(
+        self, *user_ids: int, user_id: int | None = None,
+    ) -> dict[int, CurrentlyViewingOfferInfo | bool] | CurrentlyViewingOfferInfo | bool:
+        """
+        Returns the last offer that the user has seen recently
+        """
+        if user_ids:
+            objects = [CPURequestObject(id=user_id) for user_id in user_ids]
+        else:
+            objects = [CPURequestObject(id=user_id)]
+
+        response = await self.runner_request(objects_to_request=objects)
+
+        if not response.cpu:
+            return {} if user_ids else False
+
+        if user_ids:
+            return {cpu.id: cpu.data for cpu in response.cpu}  # type: ignore # todo
+        return response.cpu[0].data
+
     async def get_unread_chats_amount(self) -> int:
         """
         Returns the amount of unread chats
@@ -404,7 +434,7 @@ class Bot:
         if not response.chat_counter:
             return 0
 
-        return response.chat_counter.data.counter # type: ignore # will have data
+        return response.chat_counter.data.counter  # type: ignore # will have data
 
     async def get_active_orders_amount(self) -> tuple[int, int]:
         """
@@ -415,7 +445,7 @@ class Bot:
         if not response.orders_counters:
             return (0, 0)
 
-        return response.orders_counters.data.purchases, response.orders_counters.data.sales # type: ignore # will have data
+        return response.orders_counters.data.purchases, response.orders_counters.data.sales  # type: ignore # will have data
 
     async def get_recent_chat_previews(self) -> list[PrivateChatPreview]:
         """
@@ -426,7 +456,7 @@ class Bot:
         if not response.chat_bookmarks:
             return []
 
-        return response.chat_bookmarks.data.chat_previews # type: ignore # will have data
+        return response.chat_bookmarks.data.chat_previews  # type: ignore # will have data
 
     @overload
     async def get_chat_messages(
@@ -487,8 +517,8 @@ class Bot:
             return {} if args else []
 
         if args:
-            return {obj.data.node.id: obj.data.messages for obj in response.nodes} # type: ignore # todo
-        return response.nodes[0].data.messages # type: ignore # todo
+            return {obj.data.node.id: obj.data.messages for obj in response.nodes}  # type: ignore # todo
+        return response.nodes[0].data.messages  # type: ignore # todo
 
     # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
