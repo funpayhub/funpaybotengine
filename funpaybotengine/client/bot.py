@@ -400,18 +400,18 @@ class Bot:
 
     # ----- Runner shortcuts -----
     @overload
-    async def get_recently_seen_offer(
+    async def get_currently_viewing_offer(
         self,
         *user_ids: int,
         user_id: None = None,
     ) -> dict[int, CurrentlyViewingOfferInfo | bool]: ...
 
     @overload
-    async def get_recently_seen_offer(
+    async def get_currently_viewing_offer(
         self, *, user_id: int
     ) -> CurrentlyViewingOfferInfo | bool: ...
 
-    async def get_recently_seen_offer(
+    async def get_currently_viewing_offer(
         self,
         *user_ids: int,
         user_id: int | None = None,
