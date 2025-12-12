@@ -13,6 +13,7 @@ from collections.abc import Callable, Sequence
 
 from typing_extensions import Self
 
+from funpaybotengine.client.default_hooks import force_locale_hook
 from funpaybotengine.types import (
     Message,
     Currency,
@@ -95,7 +96,7 @@ from funpaybotengine.client.session.base import Response
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
-
+from typing import Protocol
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
     from funpaybotengine.dispatching.routers.dispatcher import Dispatcher
@@ -103,6 +104,9 @@ if TYPE_CHECKING:
 
 F = TypeVar('F', bound=Callable[..., Any])
 
+R = TypeVar('R', bound=Any)
+class LocaleMismatchHookProto(Protocol):
+    async def __call__(self, __method: FunPayMethod[R], __bot: 'Bot', __response: Response[R]) -> Response[R]: pass
 
 class Bot:
     def __init__(
@@ -132,6 +136,8 @@ class Bot:
         self._username: str | None = None
 
         self._session_updated_at = 0
+
+        self._on_locale_mismatch_hook: LocaleMismatchHookProto = force_locale_hook
 
         self._messages_lock = Lock()
         self._listening_lock = Lock()
@@ -233,6 +239,9 @@ class Bot:
     @property
     def session_updated_at(self) -> int:
         return self._session_updated_at
+
+    def set_on_locale_mismatch_hook(self, hook: LocaleMismatchHookProto) -> None:
+        self._on_locale_mismatch_hook = hook
 
     async def runner_request(
         self,
@@ -350,7 +359,7 @@ class Bot:
             ).execute(self)
 
             if not keep_chat_unread:
-                msg = result.nodes[0].data.messages[-1]  # type: ignore[index] # will have nodes
+                msg = result.nodes[0].data.messages[-1]  # type: ignore # will have nodes
                 await self.storage.mark_message_as_sent_by_bot(message_id=msg.id)
                 return msg
         return None
@@ -755,8 +764,8 @@ class Bot:
             await self.update()
 
         result = await self.session.make_request(method, self)
-        if self.initialized and self._locale != Language.get_by_lang_code(result.response_obj):
-            ...
+        if self._locale and self._locale != Language.get_by_lang_code(result.locale):
+            result = await self._on_locale_mismatch_hook(method, self, result)
 
         if isinstance(result.response_obj, FunPayPage):
             if self._golden_key and not result.response_obj.header.avatar_url:
@@ -783,7 +792,8 @@ class Bot:
         self._phpsessid = result.cookies.get('PHPSESSID')
         self._logout_token = page_obj.header.logout_token
 
-        self._locale = page_obj.app_data.locale
+        if not self._locale or change_locale is not None:
+            self._locale = page_obj.app_data.locale
 
         self._currency = page_obj.header.currency
         self._userid = page_obj.header.user_id
