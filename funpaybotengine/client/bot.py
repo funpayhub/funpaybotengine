@@ -243,10 +243,10 @@ class Bot:
         Makes request to the runner.
         :return: Runner response.
         """
-        return await RunnerRequest(
+        return (await RunnerRequest(
             objects_to_request=objects_to_request,
             action=action,
-        ).execute(self)
+        ).execute(self)).response_obj
 
     # ----- Actions -----
     async def upload_chat_image(self, file: str | BytesIO) -> int:
@@ -260,10 +260,10 @@ class Bot:
 
         :return: Unique FunPay image ID assigned to the uploaded image.
         """
-        return await UploadImage(file=file).execute(self)
+        return (await UploadImage(file=file).execute(self)).response_obj
 
     async def upload_avatar(self, file: str | BytesIO) -> bool:
-        return await UploadAvatar(file=file).execute(self)
+        return (await UploadAvatar(file=file).execute(self)).response_obj
 
     @overload
     async def send_message(
@@ -356,47 +356,47 @@ class Bot:
         return None
 
     async def refund(self, order_id: str) -> bool:
-        return await Refund(order_id=order_id).execute(self)
+        return (await Refund(order_id=order_id).execute(self)).response_obj
 
     async def review(self, order_id: str, text: str, rating: Literal[0, 1, 2, 3, 4, 5]) -> bool:
-        return await Review(order_id=order_id, text=text, rating=rating).execute(self)
+        return (await Review(order_id=order_id, text=text, rating=rating).execute(self)).response_obj
 
     async def delete_review(self, order_id: str) -> bool:
-        return await DeleteReview(order_id=order_id).execute(self)
+        return (await DeleteReview(order_id=order_id).execute(self)).response_obj
 
     async def save_offer_fields(self, offer_fields: OfferFields) -> bool:
-        return await SaveOfferFields(offer_fields=offer_fields).execute(self)
+        return (await SaveOfferFields(offer_fields=offer_fields).execute(self)).response_obj
 
     async def calc_chips(self, game_id: int, price: float) -> CalcResult:
-        return await CalcChips(game_id=game_id, price=price).execute(self)
+        return (await CalcChips(game_id=game_id, price=price).execute(self)).response_obj
 
     async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
-        return await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
+        return (await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)).response_obj
 
     async def logout(self) -> bool:
         if self.logout_token is None:
             await self.update()
 
-        return await Logout(logout_token=self.logout_token).execute(self)  # type: ignore # will raise UnauthorizedError after self.update
+        return (await Logout(logout_token=self.logout_token).execute(self)).response_obj  # type: ignore # will raise UnauthorizedError after self.update
 
     async def set_notification_status(self, enabled: bool, channel: NoticeChannel) -> bool:
-        return await UpdateNoticeChannel(enabled=enabled, channel=channel).execute(self)
+        return (await UpdateNoticeChannel(enabled=enabled, channel=channel).execute(self)).response_obj
 
     async def set_telegram_notification_status(self, enabled: bool) -> bool:
-        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
+        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
             self,
-        )
+        )).response_obj
 
     async def set_push_notification_status(self, enabled: bool) -> bool:
-        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.PUSH).execute(self)
+        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.PUSH).execute(self)).response_obj
 
     async def set_email_notification_status(self, enabled: bool) -> bool:
-        return await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
+        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
             self,
-        )
+        )).response_obj
 
     async def set_offers_hidden(self, hidden: bool) -> bool:
-        return await SetOffersHidden(hidden=hidden).execute(self)
+        return (await SetOffersHidden(hidden=hidden).execute(self)).response_obj
 
     # ----- Runner shortcuts -----
     @overload
@@ -535,7 +535,7 @@ class Bot:
 
     # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
-        return await GetTelegramConnectURL().execute(self)
+        return (await GetTelegramConnectURL().execute(self)).response_obj
 
     async def get_chat_history(
         self,
@@ -553,9 +553,9 @@ class Bot:
 
         :returns: A list of up to 100 ``Message`` objects, sorted from newest to oldest.
         """
-        return await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
+        return (await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
             self,
-        )
+        )).response_obj
 
     async def get_sales(
         self,
@@ -592,7 +592,7 @@ class Bot:
             other_filters=other_filters,
         )
 
-        return await method.execute(self)
+        return (await method.execute(self)).response_obj
 
     async def get_purchases(
         self,
@@ -629,7 +629,7 @@ class Bot:
             other_filters=other_filters,
         )
 
-        return await method.execute(self)
+        return (await method.execute(self)).response_obj
 
     @overload
     async def get_offer_fields(
@@ -680,28 +680,28 @@ class Bot:
                 f'(got {subcategory=}).',
             )
 
-        return await GetOfferFields(
+        return (await GetOfferFields(
             subcategory_type=t,
             subcategory_id=i,
             offer_id=offer_id,
-        ).execute(self)
+        ).execute(self)).response_obj
 
     async def get_transactions(
         self,
         from_transaction_id: int = 0,
         filter: str = '',
     ) -> TransactionPreviewsBatch:
-        return await GetTransactions(
+        return (await GetTransactions(
             filter=filter,
             from_transaction_id=from_transaction_id,
-        ).execute(self)
+        ).execute(self)).response_obj
 
     # ----- Page getters -----
     async def get_main_page(self) -> MainPage:
         """
         Retrieves the FunPay main page.
         """
-        return await GetMainPage().execute(self)
+        return (await GetMainPage().execute(self)).response_obj
 
     async def get_chat_page(self, chat_id: int | str) -> ChatPage:
         """
@@ -709,35 +709,35 @@ class Bot:
 
         :param chat_id: Chat ID or name.
         """
-        return await GetChatPage(chat_id=chat_id).execute(self)
+        return (await GetChatPage(chat_id=chat_id).execute(self)).response_obj
 
     async def get_profile_page(self, id: int) -> ProfilePage:
-        return await GetProfilePage(user_id=id).execute(self)
+        return (await GetProfilePage(user_id=id).execute(self)).response_obj
 
     async def get_subcategory_page(
         self,
         subcategory_type: SubcategoryType,
         subcategory_id: int,
     ) -> SubcategoryPage:
-        return await GetSubcategoryPage(
+        return (await GetSubcategoryPage(
             type=subcategory_type,
             subcategory_id=subcategory_id,
-        ).execute(self)
+        ).execute(self)).response_obj
 
     async def get_order_page(self, order_id: str) -> OrderPage:
-        return await GetOrderPage(order_id=order_id).execute(self)
+        return (await GetOrderPage(order_id=order_id).execute(self)).response_obj
 
     async def get_settings_page(self) -> SettingsPage:
-        return await GetSettingPage().execute(self)
+        return (await GetSettingPage().execute(self)).response_obj
 
     async def get_settings(self) -> Settings:
         return (await self.get_settings_page()).settings
 
     async def get_2fa_status(self) -> bool:
-        return await Get2faStatus().execute(self)
+        return (await Get2faStatus().execute(self)).response_obj
 
     async def check_banned(self) -> bool:
-        return await CheckBanned().execute(self)
+        return (await CheckBanned().execute(self)).response_obj
 
     async def make_request(
         self,
@@ -755,6 +755,8 @@ class Bot:
             await self.update()
 
         result = await self.session.make_request(method, self)
+        if self.initialized and self._locale != Language.get_by_lang_code(result.response_obj):
+            ...
 
         if isinstance(result.response_obj, FunPayPage):
             if self._golden_key and not result.response_obj.header.avatar_url:

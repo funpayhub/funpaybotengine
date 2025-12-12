@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from http import HTTPStatus
+from urllib.parse import urlparse
 
 from funpaybotengine.exceptions import (
     NotFoundError,
@@ -46,6 +47,15 @@ class RawResponse(Generic[ResponseObject]):
     method_obj: FunPayMethod[ResponseObject]
     context: dict[str, Any]
     executed_as: Bot
+
+    @property
+    def locale(self) -> str:
+        parsed = urlparse(self.url)
+        path_parts = parsed.path.strip('/').split('/')
+
+        if path_parts and path_parts[0] in ['en', 'uk']:
+            return path_parts[0]
+        return 'ru'
 
 
 @dataclass
