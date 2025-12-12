@@ -226,5 +226,4 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
 
         :param as_: Bot instance to execute.
         """
-        result = await as_.make_request(self)
-        return result
+        return await as_.make_request(self)
