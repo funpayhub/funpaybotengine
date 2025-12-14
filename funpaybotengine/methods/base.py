@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ('FunPayMethod', 'MethodReturnType')
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, overload, Literal
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
@@ -19,7 +19,7 @@ from funpaybotengine.client.session.http_methods import HTTPMethod
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
-    from funpaybotengine.client.session.base import RawResponse, Response
+    from funpaybotengine.client.session.base import Response, RawResponse
 
 
 R = TypeVar('R')

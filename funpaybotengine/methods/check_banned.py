@@ -12,7 +12,7 @@ from funpaybotengine.client.session import HTTPMethod
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.client import Bot, RawResponse, Response
+    from funpaybotengine.client import Bot, Response, RawResponse
 
 
 class CheckBanned(FunPayMethod[bool], BaseModel):

@@ -5,7 +5,7 @@ __all__ = ('Bot',)
 
 import time
 import asyncio
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, Protocol, overload
 from io import BytesIO
 from asyncio import Lock, Event
 from contextlib import suppress
@@ -13,7 +13,6 @@ from collections.abc import Callable, Sequence
 
 from typing_extensions import Self
 
-from funpaybotengine.client.default_hooks import force_locale_hook
 from funpaybotengine.types import (
     Message,
     Currency,
@@ -93,20 +92,29 @@ from funpaybotengine.types.requests import (
     OrdersCountersRequestObject,
 )
 from funpaybotengine.client.session.base import Response
+from funpaybotengine.client.default_hooks import force_locale_hook
 from funpaybotengine.storage.inmemory_storage import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
-from typing import Protocol
+
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
     from funpaybotengine.dispatching.routers.dispatcher import Dispatcher
 
 
 F = TypeVar('F', bound=Callable[..., Any])
-
 R = TypeVar('R', bound=Any)
+
+
 class LocaleMismatchHookProto(Protocol):
-    async def __call__(self, __method: FunPayMethod[R], __bot: 'Bot', __response: Response[R]) -> Response[R]: pass
+    async def __call__(
+        self,
+        __method: FunPayMethod[R],
+        __bot: 'Bot',
+        __response: Response[R],
+    ) -> Response[R]:
+        pass
+
 
 class Bot:
     def __init__(
@@ -252,10 +260,12 @@ class Bot:
         Makes request to the runner.
         :return: Runner response.
         """
-        return (await RunnerRequest(
-            objects_to_request=objects_to_request,
-            action=action,
-        ).execute(self)).response_obj
+        return (
+            await RunnerRequest(
+                objects_to_request=objects_to_request,
+                action=action,
+            ).execute(self)
+        ).response_obj
 
     # ----- Actions -----
     async def upload_chat_image(self, file: str | BytesIO) -> int:
@@ -368,7 +378,9 @@ class Bot:
         return (await Refund(order_id=order_id).execute(self)).response_obj
 
     async def review(self, order_id: str, text: str, rating: Literal[0, 1, 2, 3, 4, 5]) -> bool:
-        return (await Review(order_id=order_id, text=text, rating=rating).execute(self)).response_obj
+        return (
+            await Review(order_id=order_id, text=text, rating=rating).execute(self)
+        ).response_obj
 
     async def delete_review(self, order_id: str) -> bool:
         return (await DeleteReview(order_id=order_id).execute(self)).response_obj
@@ -380,7 +392,9 @@ class Bot:
         return (await CalcChips(game_id=game_id, price=price).execute(self)).response_obj
 
     async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
-        return (await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)).response_obj
+        return (
+            await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
+        ).response_obj
 
     async def logout(self) -> bool:
         if self.logout_token is None:
@@ -389,20 +403,28 @@ class Bot:
         return (await Logout(logout_token=self.logout_token).execute(self)).response_obj  # type: ignore # will raise UnauthorizedError after self.update
 
     async def set_notification_status(self, enabled: bool, channel: NoticeChannel) -> bool:
-        return (await UpdateNoticeChannel(enabled=enabled, channel=channel).execute(self)).response_obj
+        return (
+            await UpdateNoticeChannel(enabled=enabled, channel=channel).execute(self)
+        ).response_obj
 
     async def set_telegram_notification_status(self, enabled: bool) -> bool:
-        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
-            self,
-        )).response_obj
+        return (
+            await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.TELEGRAM).execute(
+                self,
+            )
+        ).response_obj
 
     async def set_push_notification_status(self, enabled: bool) -> bool:
-        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.PUSH).execute(self)).response_obj
+        return (
+            await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.PUSH).execute(self)
+        ).response_obj
 
     async def set_email_notification_status(self, enabled: bool) -> bool:
-        return (await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
-            self,
-        )).response_obj
+        return (
+            await UpdateNoticeChannel(enabled=enabled, channel=NoticeChannel.EMAIL).execute(
+                self,
+            )
+        ).response_obj
 
     async def set_offers_hidden(self, hidden: bool) -> bool:
         return (await SetOffersHidden(hidden=hidden).execute(self)).response_obj
@@ -465,7 +487,7 @@ class Bot:
         response = await self.runner_request(objects_to_request=[OrdersCountersRequestObject()])
 
         if not response.orders_counters:
-            return (0, 0)
+            return 0, 0
 
         return response.orders_counters.data.purchases, response.orders_counters.data.sales  # type: ignore # will have data
 
@@ -562,9 +584,11 @@ class Bot:
 
         :returns: A list of up to 100 ``Message`` objects, sorted from newest to oldest.
         """
-        return (await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
-            self,
-        )).response_obj
+        return (
+            await GetChatHistory(chat_id=chat_id, before_message_id=before_message_id).execute(
+                self,
+            )
+        ).response_obj
 
     async def get_sales(
         self,
@@ -689,21 +713,25 @@ class Bot:
                 f'(got {subcategory=}).',
             )
 
-        return (await GetOfferFields(
-            subcategory_type=t,
-            subcategory_id=i,
-            offer_id=offer_id,
-        ).execute(self)).response_obj
+        return (
+            await GetOfferFields(
+                subcategory_type=t,
+                subcategory_id=i,
+                offer_id=offer_id,
+            ).execute(self)
+        ).response_obj
 
     async def get_transactions(
         self,
         from_transaction_id: int = 0,
         filter: str = '',
     ) -> TransactionPreviewsBatch:
-        return (await GetTransactions(
-            filter=filter,
-            from_transaction_id=from_transaction_id,
-        ).execute(self)).response_obj
+        return (
+            await GetTransactions(
+                filter=filter,
+                from_transaction_id=from_transaction_id,
+            ).execute(self)
+        ).response_obj
 
     # ----- Page getters -----
     async def get_main_page(self) -> MainPage:
@@ -728,10 +756,12 @@ class Bot:
         subcategory_type: SubcategoryType,
         subcategory_id: int,
     ) -> SubcategoryPage:
-        return (await GetSubcategoryPage(
-            type=subcategory_type,
-            subcategory_id=subcategory_id,
-        ).execute(self)).response_obj
+        return (
+            await GetSubcategoryPage(
+                type=subcategory_type,
+                subcategory_id=subcategory_id,
+            ).execute(self)
+        ).response_obj
 
     async def get_order_page(self, order_id: str) -> OrderPage:
         return (await GetOrderPage(order_id=order_id).execute(self)).response_obj
@@ -752,6 +782,7 @@ class Bot:
         self,
         method: FunPayMethod[MethodReturnType],
         skip_initialization: bool = False,
+        skip_locale_check: bool = False,
     ) -> Response[MethodReturnType]:
         if not method.allow_anonymous and self.anonymous:
             raise RuntimeError(
@@ -764,7 +795,11 @@ class Bot:
             await self.update()
 
         result = await self.session.make_request(method, self)
-        if self._locale and self._locale != Language.get_by_lang_code(result.locale):
+        if (
+            not skip_locale_check
+            and self._locale
+            and self._locale != Language.get_by_lang_code(result.locale)
+        ):
             result = await self._on_locale_mismatch_hook(method, self, result)
 
         if isinstance(result.response_obj, FunPayPage):
