@@ -38,8 +38,8 @@ from funpaybotengine.methods import (
     Refund,
     Review,
     CalcLots,
-    ChatMute,
     GetSales,
+    MuteChat,
     CalcChips,
     CheckBanned,
     GetChatPage,
@@ -276,8 +276,8 @@ class Bot:
         ).response_obj
 
     # ----- Actions -----
-    async def chat_mute(self, node_id: int, mute: bool) -> bool:
-        return (await ChatMute(node_id=node_id, mute=mute).execute(self)).response_obj
+    async def mute_chat(self, chat_id: int, mute: bool) -> bool:
+        return (await MuteChat(chat_id=chat_id, mute=mute).execute(self)).response_obj
 
     async def raise_offers(self, category_id: int, *subcategory_ids: int) -> bool:
         if not subcategory_ids:

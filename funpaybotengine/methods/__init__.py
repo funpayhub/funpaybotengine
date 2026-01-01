@@ -5,8 +5,8 @@ from .logout import *
 from .refund import *
 from .review import *
 from .calc_lots import *
-from .chat_mute import *
 from .get_sales import *
+from .mute_chat import *
 from .calc_chips import *
 from .check_banned import *
 from .raise_offers import *
