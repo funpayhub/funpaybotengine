@@ -10,6 +10,7 @@ __all__ = (
     'BadRequestError',
     'NotFoundError',
     'FunPayServerError',
+    'BannedError',
 )
 
 from typing import TYPE_CHECKING, Any
