@@ -34,4 +34,4 @@ class CheckBanned(FunPayMethod[bool], BaseModel):
         return parsing_result
 
     async def execute(self, as_: Bot) -> Response[bool]:
-        return await as_.make_request(self, skip_initialization=True)
+        return await as_.make_request(self, skip_update=True)

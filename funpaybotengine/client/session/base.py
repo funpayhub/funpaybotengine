@@ -85,6 +85,7 @@ class BaseSession(ABC):
         method: FunPayMethod[MethodReturnType],
         bot: Bot,
         timeout: float | None = None,
+        skip_session_cookies: bool = False,
     ) -> Response[MethodReturnType]: ...
 
     def check_status_code(self, method: FunPayMethod[Any], status_code: int | HTTPStatus) -> None:

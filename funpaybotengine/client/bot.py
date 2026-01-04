@@ -825,20 +825,26 @@ class Bot:
     async def make_request(
         self,
         method: FunPayMethod[MethodReturnType],
-        skip_initialization: bool = False,
+        skip_update: bool = False,
         skip_locale_check: bool = False,
+        skip_session_cookies: bool = False,
     ) -> Response[MethodReturnType]:
         if not method.allow_anonymous and self.anonymous:
             raise RuntimeError(
                 f"Method '{method.__class__.__name__}' cannot be executed anonymously.",
             )
 
-        if not skip_initialization and (
+        if not skip_update and (
             not self.initialized or time.time() - self.session_updated_at >= 1200
         ):
             await self.update()
 
-        result = await self.session.make_request(method, self)
+        result = await self.session.make_request(
+            method,
+            self,
+            skip_session_cookies=skip_session_cookies,
+        )
+
         if (
             not skip_locale_check
             and self._locale
@@ -853,7 +859,7 @@ class Bot:
         if (method.url != 'account/blocked') and ('account/blocked' in result.url):
             raise UserBannedError()
 
-        if 'PHPSESSID' in result.cookies:
+        if 'PHPSESSID' in result.cookies and not skip_update:
             self._phpsessid = result.cookies['PHPSESSID']
             self._session_updated_at = int(time.time())
 
@@ -861,8 +867,7 @@ class Bot:
 
     async def update(self, change_locale: Language | None = None) -> Self:
         result = await self.make_request(
-            GetMainPage(change_locale=change_locale),
-            skip_initialization=True,
+            GetMainPage(change_locale=change_locale), skip_update=True, skip_session_cookies=True
         )
 
         page_obj = result.response_obj
