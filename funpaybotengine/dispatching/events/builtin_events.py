@@ -100,7 +100,7 @@ class OrderEvent(RunnerEvent[Message]):
         raise NotImplementedError
 
     async def get_order_page(self, update: bool = False) -> OrderPage:
-        if self._order_preview is not None and not update:
+        if self._order_page is not None and not update:
             return self._order_page
 
         order = await self.get_bound_bot().get_order_page(order_id=self.object.meta.order_id)
