@@ -1,10 +1,13 @@
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/bdec8cef-0031-4e92-990e-f15895848faa?raw=true">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/362764fb-9bac-42ca-9968-885bda675282?raw=true">
-  <img src="https://github.com/user-attachments/assets/362764fb-9bac-42ca-9968-885bda675282?raw=true" alt="FunpayBotEngine logo" width="300">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/e9827ef4-c994-464b-a4f7-83ae9c705cdd">
+  <img src="https://github.com/user-attachments/assets/e9827ef4-c994-464b-a4f7-83ae9c705cdd" alt="FunpayBotEngine logo" width="300">
 </picture>
 </p>
+
+
+
 
 FunpayBotEngine
 ===============
