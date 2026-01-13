@@ -1,7 +1,7 @@
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/1e295e38-9dbd-4b7a-ab9a-3b4df9912171">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/e9827ef4-c994-464b-a4f7-83ae9c705cdd">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/1b7099e0-14a4-408d-96a5-a149da1ad159">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/0fe5e617-e20d-42b4-804c-88d3356143d3">
   <img src="https://github.com/user-attachments/assets/e9827ef4-c994-464b-a4f7-83ae9c705cdd" alt="FunpayBotEngine logo" width="300">
 </picture>
 </p>
