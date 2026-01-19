@@ -36,3 +36,6 @@ class Get2faStatus(FunPayMethod[bool]):
             query = 'включить 2fa'
 
         return query not in response.raw_response.lower()
+
+    async def transform_result(self, parsing_result: bool, response: RawResponse[bool]) -> bool:
+        return parsing_result
