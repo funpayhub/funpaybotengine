@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from funpaybotengine.types.switch_currency import SwitchCurrencyResult
+from funpaybotengine.methods.switch_currency import SwitchCurrency
+
 
 __all__ = ('Bot',)
 
@@ -278,6 +281,12 @@ class Bot:
         ).response_obj
 
     # ----- Actions -----
+    async def get_exchange_rate(self, currency: Currency) -> SwitchCurrencyResult:
+        return (await SwitchCurrency(currency=currency, confirm=False).execute(self)).response_obj
+
+    async def switch_currency(self, currency: Currency) -> SwitchCurrencyResult:
+        return (await SwitchCurrency(currency=currency, confirm=True).execute(self)).response_obj
+
     async def mute_chat(self, chat_id: int, mute: bool) -> bool:
         return (await MuteChat(chat_id=chat_id, mute=mute).execute(self)).response_obj
 

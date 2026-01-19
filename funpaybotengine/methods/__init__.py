@@ -20,6 +20,7 @@ from .get_2fa_status import *
 from .get_offer_page import *
 from .get_order_page import *
 from .runner_request import *
+from .switch_currency import *
 from .get_chat_history import *
 from .get_offer_fields import *
 from .get_profile_page import *

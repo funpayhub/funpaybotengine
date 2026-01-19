@@ -13,4 +13,5 @@ from .finances import *
 from .messages import *
 from .settings import *
 from .categories import *
+from .switch_currency import *
 from .common_page_elements import *
