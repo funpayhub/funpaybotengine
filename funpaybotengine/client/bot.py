@@ -288,7 +288,12 @@ class Bot:
         ).response_obj.rate
 
     async def switch_currency(self, currency: Currency) -> SwitchCurrencyResult:
-        return (await SwitchCurrency(currency=currency, confirm=True).execute(self)).response_obj
+        result = (await SwitchCurrency(currency=currency, confirm=True).execute(self)).response_obj
+
+        if result.switched:
+            self._currency = currency
+
+        return result
 
     async def mute_chat(self, chat_id: int, mute: bool) -> bool:
         return (await MuteChat(chat_id=chat_id, mute=mute).execute(self)).response_obj
