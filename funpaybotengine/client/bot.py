@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from funpaybotengine.types.common import MoneyValue
 from funpaybotengine.types.switch_currency import SwitchCurrencyResult
 from funpaybotengine.methods.switch_currency import SwitchCurrency
 
@@ -281,8 +282,10 @@ class Bot:
         ).response_obj
 
     # ----- Actions -----
-    async def get_exchange_rate(self, currency: Currency) -> SwitchCurrencyResult:
-        return (await SwitchCurrency(currency=currency, confirm=False).execute(self)).response_obj
+    async def get_exchange_rate(self, currency: Currency) -> MoneyValue | None:
+        return (
+            await SwitchCurrency(currency=currency, confirm=False).execute(self)
+        ).response_obj.rate
 
     async def switch_currency(self, currency: Currency) -> SwitchCurrencyResult:
         return (await SwitchCurrency(currency=currency, confirm=True).execute(self)).response_obj

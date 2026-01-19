@@ -5,11 +5,9 @@ __all__ = ('SwitchCurrencyResult',)
 
 
 from funpaybotengine.types.base import FunPayObject
-from funpaybotengine.types.enums import Currency
+from funpaybotengine.types.common import MoneyValue
 
 
 class SwitchCurrencyResult(FunPayObject):
     switched: bool = False
-    rate: float | None = None
-    currency_from: Currency = Currency.UNKNOWN
-    currency_to: Currency = Currency.UNKNOWN
+    rate: MoneyValue | None = None

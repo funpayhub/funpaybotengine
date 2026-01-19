@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from funpaybotengine.types.common import MoneyValue
+
 
 __all__ = ('SwitchCurrency',)
 
@@ -19,8 +21,6 @@ if TYPE_CHECKING:
 class SwitchCurrency(FunPayMethod[SwitchCurrencyResult]):
     currency: Currency
     confirm: bool
-
-    __model_to_build__ = SwitchCurrencyResult
 
     def __init__(
         self,
@@ -42,21 +42,18 @@ class SwitchCurrency(FunPayMethod[SwitchCurrencyResult]):
             confirm=confirm,
         )
 
-        self.currency = currency
-        self.confirm = confirm
-
     async def parse_result(
         self, response: RawResponse[SwitchCurrencyResult]
     ) -> SwitchCurrencyResult:
         if self.confirm:
-            return SwitchCurrencyResult(
-                raw_source=response.raw_response, switched=True, currency_to=self.currency
-            )
+            return SwitchCurrencyResult(raw_source=response.raw_response, switched=True, rate=None)
 
         result = json.loads(response.raw_response)
 
         if 'modal' not in result:
-            raise ValueError('Invalid response format: missing "modal" field')
+            return SwitchCurrencyResult(
+                raw_source=response.raw_response, switched=False, rate=None
+            )
 
         space = r'(?:\s|&nbsp;|&#160;)+'
         pattern = re.compile(
@@ -69,21 +66,27 @@ class SwitchCurrency(FunPayMethod[SwitchCurrencyResult]):
         match = pattern.search(result['modal'])
 
         if not match:
-            raise ValueError('Could not parse exchange rate from response')
+            return SwitchCurrencyResult(
+                raw_source=response.raw_response, switched=False, rate=None
+            )
 
         rate = float(match.group('rate'))
         from_cur_symbol = match.group('from')
-        to_cur_symbol = match.group('to')
 
         from_cur = Currency.get_by_character(from_cur_symbol)
-        to_cur = Currency.get_by_character(to_cur_symbol)
-
-        if from_cur == self.currency:
-            from_cur, to_cur = to_cur, from_cur
 
         return SwitchCurrencyResult(
             raw_source=response.raw_response,
-            rate=rate,
-            currency_from=from_cur,
-            currency_to=to_cur,
+            rate=MoneyValue(
+                raw_source=response.raw_response,
+                value=rate,
+                character=from_cur,
+            ),
         )
+
+    async def transform_result(
+        self,
+        parsing_result: SwitchCurrencyResult,
+        response: RawResponse[SwitchCurrencyResult],
+    ) -> SwitchCurrencyResult:
+        return parsing_result
