@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import time
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
-from collections.abc import Callable
 from itertools import chain
+from collections.abc import Callable
 
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
@@ -146,18 +146,19 @@ class EventsPack:
 
     def add_message_event(self, c: ChatChangedEvent, e: NewMessageEvent, /) -> None:
         meta = e.message.meta
+        bot = e.get_bound_bot()
         if meta.type not in _RELATED:
             self.tree[c][e] = None
             return
 
         if meta.type in _REVIEW_RELATED:
             cls = _REVIEW_RELATED[meta.type]
-            review_event = cls(object=e.message, tag=e.tag, related_new_message_event=e).as_(e.bot)
+            review_event = cls(object=e.message, tag=e.tag, related_new_message_event=e).as_(bot)
             self.tree[c][e] = review_event
             return
 
         # if in order_related
-        buyer_id, seller_id, uid = meta.buyer_id, meta.seller_id, e.bot.userid
+        buyer_id, seller_id, uid = meta.buyer_id, meta.seller_id, bot.userid
         if buyer_id:
             self.purchases_related.append(e) if buyer_id == uid else self.sales_related.append(e)
         elif meta.seller_id:

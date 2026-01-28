@@ -71,6 +71,7 @@ from funpaybotengine.methods import (
 )
 from funpaybotengine.exceptions import (
     UserBannedError,
+    BotNotInitializedError,
     BotUnauthenticatedError,
 )
 from funpaybotengine.types.enums import OrderStatus, NoticeChannel, SubcategoryType
@@ -201,46 +202,66 @@ class Bot:
         return self._golden_key
 
     @property
-    def csrf_token(self) -> str | None:
+    def csrf_token(self) -> str:
         """
         CSRF token. Available only after initialization (``Bot.update`` method).
         """
+        if self._csrf_token is None:
+            raise BotNotInitializedError(self)
         return self._csrf_token
 
     @property
-    def phpsessid(self) -> str | None:
+    def phpsessid(self) -> str:
         """
         PHPSESSID. Available only after initialization (``Bot.update`` method).
         """
+        if self._phpsessid is None:
+            raise BotNotInitializedError(self)
         return self._phpsessid
 
     @property
-    def logout_token(self) -> str | None:
+    def logout_token(self) -> str:
         """
         Logout token. Available only after initialization (``Bot.update`` method).
         """
+        if self.anonymous:
+            return ''
+        if not self._logout_token:
+            raise BotNotInitializedError(self)
         return self._logout_token
 
     @property
-    def userid(self) -> int | None:
+    def userid(self) -> int:
+        if self.anonymous:
+            return -1
+        if self._userid is None:
+            raise BotNotInitializedError(self)
         return self._userid
 
     @property
     def username(self) -> str | None:
+        if self.anonymous:
+            return ''
+        if not self._username:
+            raise BotNotInitializedError(self)
         return self._username
 
     @property
-    def locale(self) -> Language | None:
+    def locale(self) -> Language:
         """
         Bot locale. Available only after initialization (``Bot.update`` method).
         """
+        if self._locale is None:
+            raise BotNotInitializedError(self)
         return self._locale
 
     @property
-    def currency(self) -> Currency | None:
+    def currency(self) -> Currency:
         """
         Bot currency. Available only after initialization (``Bot.update`` method).
         """
+        if self._currency is None:
+            raise BotNotInitializedError(self)
         return self._currency
 
     @property
@@ -437,7 +458,7 @@ class Bot:
         if self.logout_token is None:
             await self.update()
 
-        return (await Logout(logout_token=self.logout_token).execute(self)).response_obj  # type: ignore # will raise UnauthorizedError after self.update
+        return (await Logout(logout_token=self.logout_token).execute(self)).response_obj
 
     async def set_notification_status(self, enabled: bool, channel: NoticeChannel) -> bool:
         return (
