@@ -91,21 +91,28 @@ class OrderPreviewsBatch(FunPayObject):
         if not self.next_order_id:
             raise ValueError('Last batch.')
         if self.type is OrderPreviewType.UNKNOWN:
-            raise ValueError('Unknown type')
+            raise ValueError('Unknown type.')
 
         if self.type == OrderPreviewType.SALE:
-            method = self.get_bound_bot().get_sales
+            method_coroutine = self.get_bound_bot().get_sales(
+                from_order_id=self.next_order_id,
+                order_id_filter=self.order_id_filter,
+                buyer_username_filter=self.buyer_username_filter,
+                status_filter=self.status_filter,
+                game_id_filter=self.game_id_filter,
+                other_filters=self.other_filters,
+            )
         else:
-            method = self.get_bound_bot().get_purchases
+            method_coroutine = self.get_bound_bot().get_purchases(
+                from_order_id=self.next_order_id,
+                order_id_filter=self.order_id_filter,
+                seller_username_filter=self.buyer_username_filter,
+                status_filter=self.status_filter,
+                game_id_filter=self.game_id_filter,
+                other_filters=self.other_filters,
+            )
 
-        return await method(
-            from_order_id=self.next_order_id,
-            order_id_filter=self.order_id_filter,
-            buyer_username_filter=self.buyer_username_filter,
-            status_filter=self.status_filter,
-            game_id_filter=self.game_id_filter,
-            other_filters=self.other_filters,
-        )
+        return await method_coroutine
 
     @computed_field  # type: ignore[prop-decorator]
     @property
