@@ -3,7 +3,7 @@ from __future__ import annotations
 
 __all__ = ('HandlerManager',)
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from eventry.asyncio.default_types import FilterType, HandlerType, MiddlewareType
 from eventry.asyncio.handler_manager import HandlerManager as BaseHandlerManager
@@ -35,35 +35,30 @@ class HandlerManager(BaseHandlerManager[FilterType, HandlerType, MiddlewareType,
 
     @property
     def inner_middleware(self) -> MiddlewareManager:
-        middleware = self.middleware_manager(MiddlewareManagerTypes.INNER_PER_HANDLER)
-        if middleware is None:
-            raise RuntimeError('Unable to locate inner middleware.')
-        return middleware
+        return cast(
+            MiddlewareManager, self.middleware_manager(MiddlewareManagerTypes.INNER_PER_HANDLER)
+        )
 
     @property
     def outer_middleware(self) -> MiddlewareManager:
-        middleware = self.middleware_manager(MiddlewareManagerTypes.OUTER_PER_HANDLER)
-        if middleware is None:
-            raise RuntimeError('Unable to locate outer middleware.')
-        return middleware
+        return cast(
+            MiddlewareManager, self.middleware_manager(MiddlewareManagerTypes.OUTER_PER_HANDLER)
+        )
 
     @property
     def manager_outer(self) -> MiddlewareManager:
-        middleware = self.middleware_manager(MiddlewareManagerTypes.MANAGER_OUTER)
-        if middleware is None:
-            raise RuntimeError('Unable to locate manager outer middleware.')
-        return middleware
+        return cast(
+            MiddlewareManager, self.middleware_manager(MiddlewareManagerTypes.MANAGER_OUTER)
+        )
 
     @property
     def manager_inner(self) -> MiddlewareManager:
-        middleware = self.middleware_manager(MiddlewareManagerTypes.MANAGER_INNER)
-        if middleware is None:
-            raise RuntimeError('Unable to locate manager inner middleware.')
-        return middleware
+        return cast(
+            MiddlewareManager, self.middleware_manager(MiddlewareManagerTypes.MANAGER_INNER)
+        )
 
     @property
     def handling_process(self) -> MiddlewareManager:
-        middleware = self.middleware_manager(MiddlewareManagerTypes.HANDLING_PROCESS)
-        if middleware is None:
-            raise RuntimeError('Unable to locate handling process middleware.')
-        return middleware
+        return cast(
+            MiddlewareManager, self.middleware_manager(MiddlewareManagerTypes.HANDLING_PROCESS)
+        )

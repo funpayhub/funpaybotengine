@@ -4,10 +4,10 @@ from __future__ import annotations
 __all__ = ['Router']
 
 
+from typing import cast
+
 from eventry.asyncio.router import Router as BaseRouter
 
-import funpaybotengine.dispatching.events.builtin_events as events
-from funpaybotengine.dispatching.events.base import ExceptionEvent
 from funpaybotengine.dispatching.handlers.handler_manager import HandlerManager
 
 
@@ -73,4 +73,4 @@ class Router(BaseRouter):
 
     @property
     def on_event(self) -> HandlerManager:
-        return self._default_handler_manager
+        return cast(HandlerManager, self._default_handler_manager)

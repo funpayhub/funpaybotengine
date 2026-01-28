@@ -94,7 +94,7 @@ class Runner:
             await _sleep(start, config.interval)
 
 
-async def _sleep(start_time: int | float, interval: int | float):
+async def _sleep(start_time: int | float, interval: int | float) -> None:
     time_to_sleep = interval - (time.time() - start_time)
     if time_to_sleep > 0:
         await asyncio.sleep(time_to_sleep)
