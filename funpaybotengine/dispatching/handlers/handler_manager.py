@@ -3,13 +3,11 @@ from __future__ import annotations
 
 __all__ = ('HandlerManager',)
 
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING
 
 from eventry.asyncio.default_types import FilterType, HandlerType, MiddlewareType
 from eventry.asyncio.handler_manager import HandlerManager as BaseHandlerManager
 from eventry.asyncio.middleware_manager import MiddlewareManager, MiddlewareManagerTypes
-
-from funpaybotengine.dispatching.events.base import Event
 
 
 if TYPE_CHECKING:
@@ -37,20 +35,35 @@ class HandlerManager(BaseHandlerManager[FilterType, HandlerType, MiddlewareType,
 
     @property
     def inner_middleware(self) -> MiddlewareManager:
-        return self.middleware_manager(MiddlewareManagerTypes.INNER_PER_HANDLER)
+        middleware = self.middleware_manager(MiddlewareManagerTypes.INNER_PER_HANDLER)
+        if middleware is None:
+            raise RuntimeError('Unable to locate inner middleware.')
+        return middleware
 
     @property
     def outer_middleware(self) -> MiddlewareManager:
-        return self.middleware_manager(MiddlewareManagerTypes.OUTER_PER_HANDLER)
+        middleware = self.middleware_manager(MiddlewareManagerTypes.OUTER_PER_HANDLER)
+        if middleware is None:
+            raise RuntimeError('Unable to locate outer middleware.')
+        return middleware
 
     @property
     def manager_outer(self) -> MiddlewareManager:
-        return self.middleware_manager(MiddlewareManagerTypes.MANAGER_OUTER)
+        middleware = self.middleware_manager(MiddlewareManagerTypes.MANAGER_OUTER)
+        if middleware is None:
+            raise RuntimeError('Unable to locate manager outer middleware.')
+        return middleware
 
     @property
     def manager_inner(self) -> MiddlewareManager:
-        return self.middleware_manager(MiddlewareManagerTypes.MANAGER_INNER)
+        middleware = self.middleware_manager(MiddlewareManagerTypes.MANAGER_INNER)
+        if middleware is None:
+            raise RuntimeError('Unable to locate manager inner middleware.')
+        return middleware
 
     @property
     def handling_process(self) -> MiddlewareManager:
-        return self.middleware_manager(MiddlewareManagerTypes.HANDLING_PROCESS)
+        middleware = self.middleware_manager(MiddlewareManagerTypes.HANDLING_PROCESS)
+        if middleware is None:
+            raise RuntimeError('Unable to locate handling process middleware.')
+        return middleware

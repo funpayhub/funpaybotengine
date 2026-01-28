@@ -633,7 +633,7 @@ class Bot:
         order_id_filter: str | None = None,
         buyer_username_filter: str | None = None,
         status_filter: OrderStatus | str | None = None,
-        game_id_filter: str | None = None,
+        game_id_filter: int | None = None,
         other_filters: dict[str, str] | None = None,
     ) -> OrderPreviewsBatch:
         """
@@ -670,7 +670,7 @@ class Bot:
         order_id_filter: str | None = None,
         seller_username_filter: str | None = None,
         status_filter: OrderStatus | str | None = None,
-        game_id_filter: str | None = None,
+        game_id_filter: int | None = None,
         other_filters: dict[str, str] | None = None,
     ) -> OrderPreviewsBatch:
         """

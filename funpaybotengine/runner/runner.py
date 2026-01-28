@@ -29,7 +29,7 @@ class EventsStack:
     data: dict[Any, Any] = field(default_factory=dict)
     id: str = field(init=False, default='')
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(32))
 
     def __getitem__(self, item: Any) -> Any:
