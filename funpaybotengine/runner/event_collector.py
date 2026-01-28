@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar, cast
 from itertools import chain
 from collections.abc import Callable
 
+from funpaybotengine.types import PrivateChatPreview
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
 from funpaybotengine.exceptions import UnauthorizedError, BotUnauthenticatedError
@@ -230,7 +231,11 @@ class EventCollector:
             result = await self._get_node(objs[i : i + 10])
             if not result.nodes:
                 return {}
-            messages.update({i.data.node.id: i.data.messages for i in result.nodes})
+
+            for j in result.nodes:
+                if not j.data or not j.data.node:  # just explicit check for mypy.
+                    continue
+                messages[j.data.node.id] = j.data.messages
         return messages
 
     async def init_chats(self) -> None:
@@ -241,14 +246,15 @@ class EventCollector:
         if not result.chat_bookmarks:
             return
 
-        for i in result.chat_bookmarks.data.chat_previews:  # type: ignore # ->
-            # -> chat_bookmarks will not be `False`. If chat_bookmarks is `False`
-            # UnauthorizedError should be already raised.
+        chat_previews: list[PrivateChatPreview] = result.chat_bookmarks.data.chat_previews  # type: ignore[union-attr] # ->
+        # -> chat_bookmarks will not be `False`. If chat_bookmarks is `False`
+        # UnauthorizedError should be already raised.
 
+        for i in chat_previews:
             logger.debug(
                 f'Chat {i.id} ({i.username}) initialized. Last message ID: {i.last_message_id}',
             )
-        await self.session_storage.save_chat_previews(*result.chat_bookmarks.data.chat_previews)
+        await self.session_storage.save_chat_previews(*chat_previews)
 
     async def get_chat_changed_events(self) -> EventsPack | None:
         logger.debug('Fetching chat previews...')
@@ -448,7 +454,7 @@ class EventCollector:
         order_events_mapping = {}
         cm = total.chainmap
         for order_related in chain(total.sales_related, total.purchases_related):
-            order_event: OrderEvent | None = cm[order_related]
+            order_event: OrderEvent | None = cast(OrderEvent | None, cm[order_related])
             if order_event is not None and order_event._order_preview is not None:
                 order_events_mapping[order_event._order_preview.id] = order_event._order_preview
 

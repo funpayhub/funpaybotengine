@@ -427,7 +427,8 @@ class Bot:
             ).response_obj
 
             if not keep_chat_unread:
-                msg = result.nodes[0].data.messages[-1]
+                msg = result.nodes[0].data.messages[-1]  # type: ignore[union-attr,index] # ->
+                # -> it has data
                 await self.storage.mark_message_as_sent_by_bot(message_id=msg.id)
                 return msg
         return None
