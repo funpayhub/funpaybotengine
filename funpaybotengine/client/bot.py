@@ -313,7 +313,7 @@ class Bot:
         return (
             await RaiseOffers(
                 category_id=category_id,
-                subcategory_ids=list(subcategory_ids),
+                subcategory_ids=subcategory_ids,
             ).execute(self)
         ).response_obj
 

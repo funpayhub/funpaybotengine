@@ -6,6 +6,7 @@ __all__ = ('RaiseOffers',)
 import re
 import json
 from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from pydantic import Field
 from typing_extensions import Literal, Annotated
@@ -35,12 +36,12 @@ def parse_wait_time(response: str) -> int:
 
 class RaiseOffers(FunPayMethod[Literal[True]]):
     category_id: int
-    subcategory_ids: Annotated[list[int], Field(min_length=1)]
+    subcategory_ids: Annotated[Sequence[int], Field(min_length=1)]
 
     def __init__(
         self,
         category_id: int,
-        subcategory_ids: list[int],
+        subcategory_ids: Sequence[int],
         locale: Language | None = None,
     ):
         super().__init__(
