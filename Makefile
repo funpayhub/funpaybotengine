@@ -5,11 +5,11 @@ TESTS := tests
 .PHONY: format lint type test all ci clean install dev
 
 install:
-	uv sync --extra dev --extra tests --extra docs
-	@echo Library installed in dev mode
+	uv sync
+	@echo Production environment ready!
 
 dev:
-	uv sync --extra dev --extra tests --extra docs
+	uv sync --all-extras
 	$(PYTHON) pre-commit install
 	@echo Development environment ready!
 
