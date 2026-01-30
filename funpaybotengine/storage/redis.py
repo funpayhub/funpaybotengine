@@ -5,12 +5,12 @@ from enum import Enum
 
 from pydantic import ValidationError
 from redis.asyncio import Redis
-from funpayparsers.types import SubcategoryType
 
 from funpaybotengine.types import (
     Category,
     Subcategory,
     FunPayObject,
+    SubcategoryType,
     PrivateChatPreview,
 )
 from funpaybotengine.storage.base import Storage
@@ -37,6 +37,10 @@ class RedisStorage(Storage):
     def __init__(self, redis: Redis, key: str | None = None) -> None:
         self._redis: Redis = redis
         self._key: str = key or 'funpaybotengine'
+
+    @staticmethod
+    def _decode(value: str | bytes) -> str:
+        return value.decode() if isinstance(value, bytes) else value
 
     def _get_key(self, prefix: StoragePrefix) -> str:
         return f'{self._key}:{prefix}'
@@ -90,11 +94,15 @@ class RedisStorage(Storage):
         if not funpay_objects:
             return
 
-        name: str = self._get_key(prefix=prefix)
-        # A little hardcoding with ID
+        name: str = self._get_key(prefix)
         mapping: dict[str, str] = {
-            str(item.id): item.model_dump_json() for item in funpay_objects if getattr(item, 'id')
+            str(item.id): item.model_dump_json()
+            for item in funpay_objects
+            if getattr(item, 'id', None) is not None
         }
+
+        if not mapping:
+            return
 
         await self._redis.hset(name, mapping=mapping)
 
@@ -193,11 +201,11 @@ class RedisStorage(Storage):
         subcategory_name: str = self._get_key(StoragePrefix.SUBCATEGORY)
         key: str = self._get_subcategory_key(subcategory_type, subcategory_id)
 
-        category_id: str | bytes | None = await self._redis.hget(subcategory_name, key)
-        if category_id is None:
+        category_id_raw: str | bytes | None = await self._redis.hget(subcategory_name, key)
+        if category_id_raw is None:
             return None
 
-        category: Category | None = await self.get_category(int(category_id))
+        category: Category | None = await self.get_category(int(self._decode(category_id_raw)))
 
         if category is None:
             return None
@@ -220,44 +228,101 @@ class RedisStorage(Storage):
                 if subcategory.type == subcategory_type
             ]
 
-        subcategories: list[Subcategory | None] = []
+        subcategory_name: str = self._get_key(StoragePrefix.SUBCATEGORY)
+        keys: list[str] = [
+            self._get_subcategory_key(subcategory_type, subcategory_id)
+            for subcategory_id in subcategory_ids
+        ]
 
-        for subcategory_id in subcategory_ids:
-            subcategories.append(await self.get_subcategory(subcategory_type, subcategory_id))
+        category_ids_raw: list[str | bytes | None] = await self._redis.hmget(
+            subcategory_name, keys
+        )
+        unique_category_ids: set[int] = {
+            int(self._decode(cat_id)) for cat_id in category_ids_raw if cat_id is not None
+        }
 
-        return subcategories
+        if not unique_category_ids:
+            return [None] * len(subcategory_ids)
+
+        categories_list: list[Category | None] = await self.get_categories(*unique_category_ids)
+        categories_map: dict[int, Category] = {
+            category.id: category for category in categories_list if category is not None
+        }
+
+        result: list[Subcategory | None] = []
+        for subcategory_id, category_id_raw in zip(subcategory_ids, category_ids_raw):
+            if category_id_raw is None:
+                result.append(None)
+                continue
+
+            category = categories_map.get(int(self._decode(category_id_raw)))
+            if not category:
+                result.append(None)
+                continue
+
+            found = None
+            for subcategory in category.subcategories:
+                if subcategory.id == subcategory_id and subcategory.type == subcategory_type:
+                    found = subcategory
+                    break
+            result.append(found)
+
+        return result
 
     async def save_subcategories(self, *subcategories: Subcategory) -> None:
         if not subcategories:
             return
 
         subcategory_name: str = self._get_key(StoragePrefix.SUBCATEGORY)
+        keys: list[str] = [
+            self._get_subcategory_key(subcategory.type, subcategory.id)
+            for subcategory in subcategories
+        ]
 
-        for subcategory in subcategories:
-            key: str = self._get_subcategory_key(subcategory.type, subcategory.id)
-            category_id: str | bytes | None = await self._redis.hget(subcategory_name, key)
+        category_ids_raw: list[str | bytes | None] = await self._redis.hmget(
+            subcategory_name, keys
+        )
 
-            if category_id is None:
-                continue
+        category_to_subcategories: dict[int, list[Subcategory]] = {}
+        for subcategory, category_id_raw in zip(subcategories, category_ids_raw):
+            if category_id_raw is not None:
+                category_id = int(self._decode(category_id_raw))
+                if category_id not in category_to_subcategories:
+                    category_to_subcategories[category_id] = []
+                category_to_subcategories[category_id].append(subcategory)
 
-            category: Category | None = await self.get_category(int(category_id))
+        if not category_to_subcategories:
+            return
+
+        categories: list[Category | None] = await self.get_categories(
+            *category_to_subcategories.keys()
+        )
+        updated_categories: list[Category] = []
+
+        for category in categories:
             if category is None:
                 continue
 
-            new_subcategories: list[Subcategory] = [
-                subcategory if (old.id == subcategory.id and old.type == subcategory.type) else old
+            new_subcategories_map = {
+                (subcategory.id, subcategory.type): subcategory
+                for subcategory in category_to_subcategories[category.id]
+            }
+            new_subcategories_list: list[Subcategory] = [
+                new_subcategories_map.get((old.id, old.type), old)
                 for old in category.subcategories
             ]
 
-            updated_category: Category = category.model_copy(
-                update={'subcategories': tuple(new_subcategories)}
+            updated_categories.append(
+                category.model_copy(update={'subcategories': tuple(new_subcategories_list)})
             )
-            await self.save_categories(updated_category)
+
+        if updated_categories:
+            await self.save_categories(*updated_categories)
 
     async def remove_subcategories(
         self, subcategory_type: SubcategoryType, *subcategory_ids: int
     ) -> None:
-        subcategory_name: str = self._get_key(prefix=StoragePrefix.SUBCATEGORY)
+        subcategory_name: str = self._get_key(StoragePrefix.SUBCATEGORY)
         ids_to_remove: list[int] = [*subcategory_ids]
 
         if not subcategory_ids:
@@ -266,33 +331,53 @@ class RedisStorage(Storage):
                 subcategory.id for subcategory in all_of_type if subcategory is not None
             ]
 
-        for subcategory_id in ids_to_remove:
-            key: str = self._get_subcategory_key(subcategory_type, subcategory_id)
-            category_id: str | bytes | None = await self._redis.hget(subcategory_name, key)
+        if not ids_to_remove:
+            return
 
-            if category_id is None:
-                continue
+        keys: list[str] = [
+            self._get_subcategory_key(subcategory_type, subcategory_id)
+            for subcategory_id in ids_to_remove
+        ]
+        category_ids_raw: list[str | bytes | None] = await self._redis.hmget(
+            subcategory_name, keys
+        )
 
-            category: Category | None = await self.get_category(int(category_id))
+        category_to_removals: dict[int, set[int]] = {}
+        valid_keys_to_delete: list[str] = []
+
+        for subcategory_id, category_id_raw, key in zip(ids_to_remove, category_ids_raw, keys):
+            if category_id_raw is not None:
+                category_id = int(self._decode(category_id_raw))
+                if category_id not in category_to_removals:
+                    category_to_removals[category_id] = set()
+                category_to_removals[category_id].add(subcategory_id)
+                valid_keys_to_delete.append(key)
+
+        if not category_to_removals:
+            return
+
+        categories: list[Category | None] = await self.get_categories(*category_to_removals.keys())
+        updated_categories: list[Category] = []
+
+        for category in categories:
             if category is None:
                 continue
 
+            to_remove = category_to_removals[category.id]
             new_subcategories: list[Subcategory] = [
                 subcategory
                 for subcategory in category.subcategories
-                if not (subcategory.id == subcategory_id and subcategory.type == subcategory_type)
+                if not (subcategory.id in to_remove and subcategory.type == subcategory_type)
             ]
-
-            updated_category: Category = category.model_copy(
-                update={'subcategories': tuple(new_subcategories)}
+            updated_categories.append(
+                category.model_copy(update={'subcategories': tuple(new_subcategories)})
             )
 
-            await self._redis.hset(
-                name=self._get_key(StoragePrefix.CATEGORY),
-                key=str(category.id),
-                value=updated_category.model_dump_json(),
-            )
-            await self._redis.hdel(subcategory_name, key)
+        if updated_categories:
+            await self.save_categories(*updated_categories)
+
+        if valid_keys_to_delete:
+            await self._redis.hdel(subcategory_name, *valid_keys_to_delete)
 
     async def mark_message_as_sent_by_bot(self, message_id: int, by_bot: bool = True) -> None:
         name: str = self._get_key(StoragePrefix.SENT_BY_BOT)
@@ -303,6 +388,6 @@ class RedisStorage(Storage):
             await self._redis.srem(name, str(message_id))
 
     async def is_message_sent_by_bot(self, message_id: int) -> bool:
-        name: str = self._get_key(prefix=StoragePrefix.SENT_BY_BOT)
+        name: str = self._get_key(StoragePrefix.SENT_BY_BOT)
 
         return bool(await self._redis.sismember(name, str(message_id)))

@@ -171,7 +171,7 @@ class Storage(ABC):
     @abstractmethod
     async def save_subcategories(self, *subcategories: Subcategory) -> None:
         """
-        Save the provided subcategory.
+        Save the provided subcategories.
 
         :param subcategories: Subcategories to save.
         """

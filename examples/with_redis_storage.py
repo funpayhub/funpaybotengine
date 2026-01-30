@@ -35,6 +35,7 @@ networks:
   network:
     driver: bridge
 """
+
 from __future__ import annotations
 
 import sys
@@ -66,7 +67,10 @@ async def echo(message: Message) -> None:
 
 
 async def main() -> None:
-    await bot.listen_events(dp, session_storage=storage)
+    try:
+        await bot.listen_events(dp, session_storage=storage)
+    finally:
+        await redis.aclose()
 
 
 if __name__ == '__main__':
