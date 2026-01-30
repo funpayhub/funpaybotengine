@@ -104,7 +104,7 @@ from funpaybotengine.types.requests import (
 )
 from funpaybotengine.client.session.base import Response
 from funpaybotengine.client.default_hooks import force_locale_hook
-from funpaybotengine.storage.inmemory_storage import InMemoryStorage
+from funpaybotengine.storage.inmemory import InMemoryStorage
 from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
 

@@ -18,7 +18,7 @@ from funpaybotengine.types.requests.runner import (
     ChatBookmarksRequestObject,
     OrdersCountersRequestObject,
 )
-from funpaybotengine.storage.inmemory_storage import InMemoryStorage
+from funpaybotengine.storage.inmemory import InMemoryStorage
 from funpaybotengine.exceptions.session_exceptions import UnexpectedHTTPStatusError
 from funpaybotengine.dispatching.events.builtin_events import (
     SaleEvent,
