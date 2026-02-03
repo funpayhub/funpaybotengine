@@ -22,6 +22,14 @@ class MethodResult(FunPayObject, BaseModel):
     currency: Currency = Field(default=Currency.UNKNOWN, validation_alias='unit')
     pos: int = Field(default=0, validation_alias='sort')
 
+    @field_validator('price', mode='before')
+    @classmethod
+    def _validate_price(cls, value: Any) -> float:
+        if isinstance(value, str):
+            normalized = value.replace(' ', '').replace(',', '.')
+            return float(normalized)
+        return float(value)
+
     @field_validator('currency', mode='before')
     @classmethod
     def _validate_currency(cls, value: Any) -> Currency:
