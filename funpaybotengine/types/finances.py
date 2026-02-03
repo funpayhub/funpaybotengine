@@ -12,7 +12,7 @@ from pydantic import BaseModel, BeforeValidator
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject
-from funpaybotengine.types.enums import PaymentMethod, TransactionStatus
+from funpaybotengine.types.enums import PaymentMethod, TransactionStatus, TransactionFilter
 from funpaybotengine.types.common import MoneyValue
 
 
@@ -67,6 +67,19 @@ class TransactionInfo(FunPayObject, BaseModel):
         return MappingProxyType(value)
 
 
+def _coerce_transaction_filter(
+    value: str | TransactionFilter | None,
+) -> TransactionFilter | None:
+    if value is None:
+        return None
+    if isinstance(value, TransactionFilter):
+        return value
+    try:
+        return TransactionFilter(value)
+    except ValueError:
+        return None
+
+
 class TransactionPreviewsBatch(FunPayObject, BaseModel):
     """
     Represents a single batch of transaction previews returned by FunPay.
@@ -81,16 +94,19 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     user_id: int | None
     """ID of the user to whom all transactions in this batch belong."""
 
-    filter: str | None
+    filter: Annotated[
+        TransactionFilter | None,
+        BeforeValidator(_coerce_transaction_filter),
+    ]
     """
     The current filter applied to the review list.
 
     Known values:
-        - ``''`` (empty string): no filter applied
-        - ``'payment'``: payment transactions only
-        - ``'withdraw'``: withdrawal transactions only
-        - ``'order'``: order transactions only
-        - ``'other'``: other transactions only
+        - ``TransactionFilter.ALL``: no filter applied
+        - ``TransactionFilter.PAYMENT``: payment transactions only
+        - ``TransactionFilter.WITHDRAW``: withdrawal transactions only
+        - ``TransactionFilter.ORDER``: order transactions only
+        - ``TransactionFilter.OTHER``: other transactions only
     """
 
     next_transaction_id: int | None
@@ -98,7 +114,7 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     ID of the next transaction to use as a cursor for pagination.
 
     If present, this value should be included in the next request to fetch
-    the following batch of transaction previews. 
+    the following batch of transaction previews.
 
     If ``None``, there are no more transactions to load.
     """

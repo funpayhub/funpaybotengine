@@ -19,6 +19,7 @@ from funpaybotengine.types import (
     Language,
     Settings,
     CalcResult,
+    TransactionFilter,
     OfferFields,
     Subcategory,
     RunnerResponse,
@@ -782,7 +783,7 @@ class Bot:
     async def get_transactions(
         self,
         from_transaction_id: int = 0,
-        filter: str = '',
+        filter: TransactionFilter | str = TransactionFilter.ALL,
     ) -> TransactionPreviewsBatch:
         return (
             await GetTransactions(
