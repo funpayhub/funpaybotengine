@@ -6,7 +6,7 @@ __all__ = ('CalcResult', 'MethodResult')
 
 from typing import Any
 
-from pydantic import Field, BaseModel, field_validator
+from pydantic import Field, BaseModel, AliasChoices, field_validator
 from funpayparsers.parsers import MoneyValueParser
 
 from funpaybotengine.types.base import FunPayObject
@@ -15,12 +15,20 @@ from funpaybotengine.types.common import MoneyValue
 
 
 class MethodResult(FunPayObject, BaseModel):
-    """Represents a result of a calculation method."""
+    """
+    Represents a result of offer price calculation method (`lots/calc`) for a single payment method.
+    """
 
     name: str = ''
+    """Payment method name."""
+
     price: float = 0
-    currency: Currency = Field(default=Currency.UNKNOWN, validation_alias='unit')
-    pos: int = Field(default=0, validation_alias='sort')
+    """Calculated price."""
+
+    unit: str
+    """Price currency character."""
+
+    pos: int = Field(default=0, validation_alias=AliasChoices('pos', 'sort'))
 
     @field_validator('price', mode='before')
     @classmethod
@@ -30,16 +38,19 @@ class MethodResult(FunPayObject, BaseModel):
             return float(normalized)
         return float(value)
 
-    @field_validator('currency', mode='before')
-    @classmethod
-    def _validate_currency(cls, value: Any) -> Currency:
-        if isinstance(value, str):
-            return Currency.get_by_character(value)
-        return Currency.UNKNOWN
+    @property
+    def price_money_value(self) -> MoneyValue:
+        return MoneyValue(
+            raw_source=f'{self.price}{self.unit}', value=self.price, character=self.unit
+        )
+
+    @property
+    def currency(self) -> Currency:
+        return Currency.get_by_character(self.unit)
 
 
 class CalcResult(FunPayObject, BaseModel):
-    """Represents an answer from calculation request."""
+    """Represents a result of offer price calculation method (`lots/calc`)."""
 
     methods: list[MethodResult] = Field(default_factory=list)
     min_price: MoneyValue | None = None
