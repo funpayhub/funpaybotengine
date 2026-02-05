@@ -6,6 +6,16 @@ from funpayparsers.types.enums import *  # noqa: F403
 
 
 class TransactionFilter(str, Enum):
+    """
+    Transaction list filter values for ``users/transactions``.
+
+    - ``ALL`` (``''``): no filter
+    - ``PAYMENT``: payment transactions
+    - ``WITHDRAW``: withdrawal transactions
+    - ``ORDER``: order-related transactions
+    - ``OTHER``: other transaction types
+    """
+
     ALL = ''
     PAYMENT = 'payment'
     WITHDRAW = 'withdraw'

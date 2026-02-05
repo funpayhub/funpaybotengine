@@ -4,15 +4,14 @@ from __future__ import annotations
 __all__ = ('TransactionPreview', 'TransactionInfo', 'TransactionPreviewsBatch')
 
 
-from typing import Annotated
 from types import MappingProxyType
 from collections.abc import Mapping
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, field_validator
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject
-from funpaybotengine.types.enums import PaymentMethod, TransactionStatus, TransactionFilter
+from funpaybotengine.types.enums import PaymentMethod, TransactionFilter, TransactionStatus
 from funpaybotengine.types.common import MoneyValue
 
 
@@ -59,25 +58,15 @@ class TransactionInfo(FunPayObject, BaseModel):
     status: TransactionStatus
     """Transaction status."""
 
-    data: Annotated[Mapping[str, str], BeforeValidator(TransactionInfo._convert_to_immutable)]
+    data: Mapping[str, str]
     """Transaction data."""
 
-    @staticmethod
-    def _convert_to_immutable(value: dict[str, str]) -> MappingProxyType[str, str]:
-        return MappingProxyType(value)
-
-
-def _coerce_transaction_filter(
-    value: str | TransactionFilter | None,
-) -> TransactionFilter | None:
-    if value is None:
-        return None
-    if isinstance(value, TransactionFilter):
-        return value
-    try:
-        return TransactionFilter(value)
-    except ValueError:
-        return None
+    @field_validator('data', mode='before')
+    @classmethod
+    def _convert_to_immutable(cls, value: dict[str, str] | Mapping[str, str]) -> Mapping[str, str]:
+        if isinstance(value, MappingProxyType):
+            return value
+        return MappingProxyType(dict(value))
 
 
 class TransactionPreviewsBatch(FunPayObject, BaseModel):
@@ -94,20 +83,25 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     user_id: int | None
     """ID of the user to whom all transactions in this batch belong."""
 
-    filter: Annotated[
-        TransactionFilter | None,
-        BeforeValidator(_coerce_transaction_filter),
-    ]
+    filter: TransactionFilter | None
     """
     The current filter applied to the review list.
 
-    Known values:
-        - ``TransactionFilter.ALL``: no filter applied
-        - ``TransactionFilter.PAYMENT``: payment transactions only
-        - ``TransactionFilter.WITHDRAW``: withdrawal transactions only
-        - ``TransactionFilter.ORDER``: order transactions only
-        - ``TransactionFilter.OTHER``: other transactions only
+    See ``TransactionFilter`` for available values.
     """
+
+    @field_validator('filter', mode='before')
+    @classmethod
+    def _coerce_transaction_filter(
+        cls,
+        value: str | TransactionFilter | None,
+    ) -> TransactionFilter | None:
+        if value is None or isinstance(value, TransactionFilter):
+            return value
+        try:
+            return TransactionFilter(value)
+        except ValueError:
+            return None
 
     next_transaction_id: int | None
     """
