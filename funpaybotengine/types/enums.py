@@ -9,18 +9,27 @@ class TransactionFilter(str, Enum):
     """
     Transaction list filter values for ``users/transactions``.
 
-    - ``ALL`` (``''``): no filter
-    - ``PAYMENT``: payment transactions
-    - ``WITHDRAW``: withdrawal transactions
-    - ``ORDER``: order-related transactions
-    - ``OTHER``: other transaction types
+    - ``ALL`` (``''``): no filter;
+    - ``PAYMENT``: payment transactions;
+    - ``WITHDRAW``: withdrawal transactions;
+    - ``ORDER``: order-related transactions;
+    - ``OTHER``: other transaction types;
     """
 
     ALL = ''
+    """All transactions."""
+
     PAYMENT = 'payment'
+    """Payment transactions."""
+
     WITHDRAW = 'withdraw'
+    """Withdrawal transactions."""
+
     ORDER = 'order'
+    """Order-related transactions."""
+
     OTHER = 'other'
+    """Other transactions."""
 
 
 class OrderPreviewType(Enum):

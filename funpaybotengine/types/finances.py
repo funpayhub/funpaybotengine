@@ -84,11 +84,7 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     """ID of the user to whom all transactions in this batch belong."""
 
     filter: TransactionFilter | None
-    """
-    The current filter applied to the review list.
-
-    See ``TransactionFilter`` for available values.
-    """
+    """Transactions filter applied to the current batch."""
 
     @field_validator('filter', mode='before')
     @classmethod
