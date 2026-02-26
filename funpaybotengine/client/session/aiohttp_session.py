@@ -111,18 +111,20 @@ class AioHttpSession(BaseSession):
 
         start_time = time.time()
         async with session:
+            data = await method.get_data(bot)
             if method.method == HTTPMethod.GET:
                 response = await session.get(
                     url,
-                    params=await method.get_data(bot),
+                    params=data,
                     timeout=timeout_obj,
                     headers=self._default_headers | await method.get_headers(bot),
                 )
             elif method.method == HTTPMethod.POST:
+                if isinstance(data, dict):
+                    data = data | ({'csrf_token': csrf_token} if csrf_token else {})
                 response = await session.post(
                     url,
-                    data=await method.get_data(bot)
-                    | ({'csrf_token': csrf_token} if csrf_token else {}),
+                    data=data,
                     timeout=timeout_obj,
                     headers=self._default_headers | await method.get_headers(bot),
                 )

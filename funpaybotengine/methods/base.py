@@ -71,7 +71,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     Defaults to empty dict.
     """
 
-    data: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
+    data: CallableField[dict[str, Any] | str] | dict[str, Any] | str = Field(default_factory=dict)
     """
     Additional data.
 
