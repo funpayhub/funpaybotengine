@@ -9,7 +9,7 @@ dependencies = [
     "aiohttp>=3.13.3,<3.14",
     "aiohttp-socks>=0.11.0",
     "eventry>=0.3.6,<1.0.0",
-    "funpayparsers>=0.6.0,<0.7.0",
+    "funpayparsers>=0.6.1,<0.7.0",
     "pydantic>=2.12,<2.13",
 ]
 authors = [
