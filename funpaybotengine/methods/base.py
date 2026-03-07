@@ -4,13 +4,13 @@ from __future__ import annotations
 __all__ = ('FunPayMethod', 'MethodReturnType')
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
 from collections.abc import Callable, Awaitable
 
-from pydantic import Field, BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
 
 from funpaybotengine.types.enums import Language
@@ -24,11 +24,7 @@ if TYPE_CHECKING:
 
 R = TypeVar('R')
 MethodReturnType = TypeVar('MethodReturnType', bound=Any)
-
-if TYPE_CHECKING:
-    CallableField = Callable[['FunPayMethod[Any]', Bot], R | Awaitable[R]]
-else:
-    CallableField = Callable[[Any, Any], R | Awaitable[R]]
+CallableField = Callable[['FunPayMethod[Any]', 'Bot'], R | Awaitable[R]]
 
 
 class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
@@ -39,10 +35,10 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
         arbitrary_types_allowed=True,
     )
 
-    url: CallableField[str] | str
+    url: ClassVar[CallableField[str] | str]
     """Method URL."""
 
-    method: HTTPMethod
+    method: ClassVar[HTTPMethod]
     """
     HTTP Method.
     """
@@ -64,42 +60,42 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     If ``True``, ``FunPayMethod.locale`` will be ignored.
     """
 
-    headers: CallableField[dict[str, str]] | dict[str, str] = Field(default_factory=dict)
+    headers: ClassVar[CallableField[dict[str, str]] | dict[str, str] | None] = None
     """
     Headers.
 
     Defaults to empty dict.
     """
 
-    data: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
+    data: ClassVar[CallableField[dict[str, Any]] | dict[str, Any] | None] = None
     """
     Additional data.
 
     Defaults to empty dict.
     """
 
-    expected_status_codes: list[int | HTTPStatus] = [HTTPStatus.OK]
+    expected_status_codes: ClassVar[list[int | HTTPStatus]] = [HTTPStatus.OK]
     """
     List of expected status codes.
 
     Defaults to ``[HTTPStatus.OK]``.
     """
 
-    allow_anonymous: bool = False
+    allow_anonymous: ClassVar[bool] = False
     """
     Whether this method can be executed as anonymous user or not.
     
     Defaults to ``False``.
     """
 
-    allow_uninitialized: bool = False
+    allow_uninitialized: ClassVar[bool] = False
     """
     Whether this method can be executed as uninitialized user or not.
     
     Defaults to ``False``.
     """
 
-    parser_cls: Type[FunPayObjectParser] | None = None  # type: ignore[type-arg]
+    parser_cls: ClassVar[Type[FunPayObjectParser] | None] = None  # type: ignore[type-arg]
     # unsupported by pydantic
     """
     Parser class (not an instance!) for parsing raw source.
@@ -107,7 +103,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     Defaults to ``None``.
     """
 
-    parser_options: ParsingOptions | None = None
+    parser_options: ClassVar[ParsingOptions | None] = None
     """
     Instance of parser options for ``FunPayMethod.parser_cls``.
 
@@ -121,7 +117,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     Defaults to ``10.0``.
     """
 
-    context: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
+    context: ClassVar[CallableField[dict[str, Any]] | dict[str, Any] | None] = None
     """
     Additional context for building a final `funpaybotengine` object.
     
