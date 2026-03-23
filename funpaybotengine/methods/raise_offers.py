@@ -3,7 +3,6 @@ from __future__ import annotations
 
 __all__ = ('RaiseOffers',)
 
-import re
 import json
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
@@ -19,19 +18,6 @@ from funpaybotengine.client.session.http_methods import HTTPMethod
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import RawResponse
-
-
-def parse_wait_time(response: str) -> int:
-    x = re.search(r'(\d+)', response)
-    time = int(x.group()) if x else 0
-
-    if 'секунд' in response or 'second' in response:
-        return time or 2
-    if 'минут' in response or 'хвилин' in response or 'minute' in response:
-        return (time - 1 if time else 1) * 60
-    if 'час' in response or 'годин' in response or 'hour' in response:
-        return int((time - 0.5 if time else 1) * 3600)
-    return 10
 
 
 class RaiseOffers(FunPayMethod[Literal[True]]):
@@ -62,17 +48,9 @@ class RaiseOffers(FunPayMethod[Literal[True]]):
         data = json.loads(response.raw_response)
         error, url, msg = data.get('error'), data.get('url'), data.get('msg')
 
-        if url:
-            raise RaiseOffersError(response.raw_response, self.category_id, url, None)
+        if url or error:
+            raise RaiseOffersError(response.raw_response, self.category_id, url or msg)
 
-        if error:
-            if msg:
-                if any(_ in msg for _ in ('Подождите ', 'Please wait ', 'Зачекайте ')):
-                    wait = parse_wait_time(msg)
-                else:
-                    wait = None
-                raise RaiseOffersError(response.raw_response, self.category_id, msg, wait)
-            raise RaiseOffersError(response.raw_response, self.category_id, msg, None)
         return True
 
     async def transform_result(

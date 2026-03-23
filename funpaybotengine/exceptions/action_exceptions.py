@@ -2,6 +2,8 @@ from __future__ import annotations
 
 
 __all__ = ['RefundError', 'RaiseOffersError']
+import re
+
 from .base import FunPayBotEngineError
 
 
@@ -21,10 +23,26 @@ class RaiseOffersError(FunPayBotEngineError):
         response: str,
         category_id: int,
         message: str | None,
-        wait_time: int | None,
     ) -> None:
         super().__init__()
         self.raw_response = response
         self.category_id = category_id
         self.message = message
-        self.wait_time = wait_time
+
+    @staticmethod
+    def parse_wait_time(response: str) -> int:
+        x = re.search(r'(\d+)\s+', response)
+        time = int(x.group(1)) if x else 0
+
+        if 'секунд' in response or 'second' in response:
+            return time or 2
+        if 'минут' in response or 'хвилин' in response or 'minute' in response:
+            return (time or 1) * 60
+        if 'час' in response or 'годин' in response or 'hour' in response:
+            return (time or 1) * 3600
+
+        return 10
+
+    @property
+    def wait_time(self) -> int:
+        return self.parse_wait_time(self.message or '')
