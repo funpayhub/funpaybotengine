@@ -61,6 +61,7 @@ from funpaybotengine.methods import (
     GetProfilePage,
     GetSettingPage,
     GetMyOffersPage,
+    GetSrasInfoPage,
     GetTransactions,
     SaveOfferFields,
     SetOffersHidden,
@@ -86,6 +87,7 @@ from funpaybotengine.types.pages import (
     ProfilePage,
     MyOffersPage,
     SettingsPage,
+    SrasInfoPage,
     SubcategoryPage,
     TransactionsPage,
 )
@@ -836,6 +838,12 @@ class Bot:
 
     async def get_order_page(self, order_id: str) -> OrderPage:
         return (await GetOrderPage(order_id=order_id).execute(self)).response_obj
+
+    async def get_sras_info_page(self) -> SrasInfoPage:
+        """
+        Retrieves the SRAS info page with seller rating restrictions per subcategory.
+        """
+        return (await GetSrasInfoPage().execute(self)).response_obj
 
     async def get_settings_page(self) -> SettingsPage:
         return (await GetSettingPage().execute(self)).response_obj

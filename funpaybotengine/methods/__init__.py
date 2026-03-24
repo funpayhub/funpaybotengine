@@ -28,6 +28,7 @@ from .get_my_chips_page import *
 from .get_settings_page import *
 from .save_offer_fields import *
 from .set_offers_hidden import *
+from .get_sras_info_page import *
 from .get_my_offers_page import *
 from .get_subcategory_page import *
 from .get_transactions_page import *
