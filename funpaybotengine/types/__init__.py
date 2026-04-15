@@ -15,3 +15,4 @@ from .sras import *
 from .settings import *
 from .categories import *
 from .common_page_elements import *
+from .subcategory_structure import *
