@@ -11,6 +11,7 @@ from collections.abc import Mapping, Callable
 from pydantic import Field, BaseModel, BeforeValidator
 from typing_extensions import Self
 from funpayparsers.parsers.utils import parse_date_string
+from funpayparsers.types.subcategory_structure import SubcategoryFieldDef, SubcategoryStructure
 
 from funpaybotengine.types.base import FunPayObject, FunPayMutableObject
 from funpaybotengine.types.common import MoneyValue
@@ -84,7 +85,7 @@ class OfferPreview(FunPayObject, BaseModel):
         BeforeValidator(MappingProxyType),
     ]
     """
-    Additional data related to the offer, such as server ID, side ID, etc., 
+    Additional data related to the offer, such as server ID, side ID, etc.,
     if applicable.
     """
 
@@ -170,6 +171,33 @@ class OfferFields(FunPayMutableObject, BaseModel):
 
     fields_names: dict[str, str] = Field(default_factory=dict)
     """Field names."""
+
+    field_schema: list[SubcategoryFieldDef] = Field(default_factory=list)
+    """
+    Subcategory field schema parsed from the ``data-fields`` JSON attribute.
+
+    Each entry describes one configurable field of the subcategory, including its
+    type, human-readable label, visibility conditions, and available options
+    (for select fields).
+
+    Empty list for currency/chips offers or when the offer page does not include
+    a ``div.lot-fields[data-fields]`` element.
+    """
+
+    @property
+    def subcategory_structure(self) -> SubcategoryStructure:
+        """
+        Build and return a ``SubcategoryStructure`` from ``field_schema``.
+
+        Returns a structure with field definitions keyed by field ID,
+        plus label maps for forward and case-insensitive reverse lookups.
+
+        The result is not cached — call once and store if repeated access is needed.
+        """
+        return SubcategoryStructure(
+            subcategory_id=self.subcategory_id,
+            fields={f.id: f for f in self.field_schema},
+        )
 
     def __post_init__(self) -> None:
         if 'csrf_token' in self.fields_dict:
