@@ -11,10 +11,10 @@ from collections.abc import Mapping, Callable
 from pydantic import Field, BaseModel, BeforeValidator
 from typing_extensions import Self
 from funpayparsers.parsers.utils import parse_date_string
-from funpayparsers.types.subcategory_structure import SubcategoryFieldDef, SubcategoryStructure
 
 from funpaybotengine.types.base import FunPayObject, FunPayMutableObject
 from funpaybotengine.types.common import MoneyValue
+from funpaybotengine.types.subcategory_structure import SubcategoryFieldDef, SubcategoryStructure
 
 
 class OfferSeller(FunPayObject, BaseModel):
@@ -194,10 +194,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
 
         The result is not cached — call once and store if repeated access is needed.
         """
-        return SubcategoryStructure(
-            subcategory_id=self.subcategory_id,
-            fields={f.id: f for f in self.field_schema},
-        )
+        return SubcategoryStructure.from_offer_fields(self)
 
     def __post_init__(self) -> None:
         if 'csrf_token' in self.fields_dict:
