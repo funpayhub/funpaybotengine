@@ -125,9 +125,12 @@ class SubcategoryStructure(FunPayObject, BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _add_raw_source(cls, data: Any) -> Any:
-        # SubcategoryStructure is not parsed from HTML — generate a stable raw_source
+        # SubcategoryStructure is not parsed from HTML — generate a stable raw_source.
+        # The parser ships SubcategoryStructure as a plain @dataclass (no FunPayObject
+        # mixin, no raw_source), so when ingested via model_validate from a parser
+        # instance we must convert to dict first.
         if not isinstance(data, dict):
-            return data
+            data = asdict(data)
         if 'raw_source' not in data:
             data['raw_source'] = json.dumps({'subcategory_id': data.get('subcategory_id')})
         return data
