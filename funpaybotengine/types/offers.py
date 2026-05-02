@@ -13,6 +13,7 @@ from typing_extensions import Self
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject, FunPayMutableObject
+from funpaybotengine.types.enums import SubcategoryType
 from funpaybotengine.types.common import MoneyValue
 from funpaybotengine.types.subcategory_structure import SubcategoryFieldDef, SubcategoryStructure
 
@@ -102,6 +103,9 @@ class OfferPreview(FunPayObject, BaseModel):
 
     disabled: bool = False
     """Whether the offer is disabled (defaults to ``False``)."""
+
+    subcategory_type: SubcategoryType = SubcategoryType.UNKNOWN
+    """Type of the subcategory (OFFERS/CHIPS), derived from the offer URL."""
 
 
 T = TypeVar('T')
