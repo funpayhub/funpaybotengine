@@ -7,8 +7,9 @@ __all__ = ('FieldCondition', 'SubcategoryFieldDef', 'SubcategoryStructure')
 import json
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
+from functools import cached_property
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from funpayparsers.types.enums import SubcategoryFieldType
 
 from funpaybotengine.types.base import FunPayObject
@@ -33,7 +34,12 @@ class FieldCondition(FunPayObject, BaseModel):
     """
     Values of ``field_id`` that make the owning field visible.
 
+    Sourced from the ``list`` key in the ``data-fields`` JSON condition object.
     Stored as a ``set`` — duplicates are not possible by definition.
+
+    Values are compared case-insensitively in :meth:`is_satisfied_by`,
+    because FunPay's public listing page and the ``offerEdit`` form render
+    the same underlying value with inconsistent casing.
     """
 
     @model_validator(mode='before')
@@ -46,9 +52,14 @@ class FieldCondition(FunPayObject, BaseModel):
             data['raw_source'] = json.dumps({'field_id': data.get('field_id')})
         return data
 
+    @field_validator('values', mode='after')
+    @classmethod
+    def _casefold_values(cls, value: set[str]) -> set[str]:
+        return {str(v).casefold() for v in value}
+
     def is_satisfied_by(self, value: Any) -> bool:
-        """Return ``True`` if ``str(value)`` is present in ``values``."""
-        return str(value) in self.values
+        """Return ``True`` if *value* (case-insensitively) is present in ``values``."""
+        return str(value).casefold() in self.values
 
 
 class SubcategoryFieldDef(FunPayObject, BaseModel):
@@ -121,15 +132,27 @@ class SubcategoryStructure(FunPayObject, BaseModel):
             data['raw_source'] = json.dumps({'subcategory_id': data.get('subcategory_id')})
         return data
 
-    @property
-    def label_map(self) -> dict[str, str]:
-        """Mapping from FunPay label to field ID for reverse lookup."""
-        return {f.label: f.id for f in self.fields.values()}
+    @cached_property
+    def label_map(self) -> dict[str, list[str]]:
+        """
+        Mapping from FunPay label to list of field IDs for reverse lookup.
 
-    @property
-    def lower_label_map(self) -> dict[str, str]:
+        Values are lists because different fields may share the same label
+        (notably empty labels on fields that have no ``<label>`` in the form).
+        Field IDs appear in declaration order.
+        """
+        result: dict[str, list[str]] = {}
+        for f in self.fields.values():
+            result.setdefault(f.label, []).append(f.id)
+        return result
+
+    @cached_property
+    def lower_label_map(self) -> dict[str, list[str]]:
         """Case-insensitive variant of ``label_map`` — keys are lowercased."""
-        return {k.lower(): v for k, v in self.label_map.items()}
+        result: dict[str, list[str]] = {}
+        for label, ids in self.label_map.items():
+            result.setdefault(label.lower(), []).extend(ids)
+        return result
 
     @classmethod
     def from_offer_fields(cls, offer_fields: OfferFields) -> SubcategoryStructure:
