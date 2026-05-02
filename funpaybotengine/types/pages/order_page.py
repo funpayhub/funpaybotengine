@@ -17,6 +17,7 @@ from funpaybotengine.types.enums import OrderStatus, SubcategoryType
 from funpaybotengine.types.common import MoneyValue
 from funpaybotengine.types.reviews import Review
 from funpaybotengine.types.pages.base import FunPayPage
+from funpaybotengine.types.subcategory_structure import SubcategoryStructure
 
 
 class OrderPage(FunPayPage, BaseModel):
@@ -52,6 +53,14 @@ class OrderPage(FunPayPage, BaseModel):
     @staticmethod
     def _convert_to_immutable(value: dict[str, str]) -> MappingProxyType[str, str]:
         return MappingProxyType(value)
+
+    def get_structured_fields(self, structure: SubcategoryStructure) -> dict[str, str]:
+        """Return ``data`` remapped to FunPay field IDs using *structure*'s label map."""
+        return {
+            structure.lower_label_map[label.lower()][0]: val
+            for label, val in self.data.items()
+            if label.lower() in structure.lower_label_map
+        }
 
     def _first_found(self, names: list[str]) -> str | None:
         for i in names:
