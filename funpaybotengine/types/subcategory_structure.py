@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 
-__all__ = ('FieldCondition', 'SubcategoryFieldDef', 'SubcategoryStructure')
+__all__ = ('AliasSource', 'FieldCondition', 'SubcategoryFieldDef', 'SubcategoryStructure')
 
 
 import json
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
 from functools import cached_property
+from collections.abc import Iterable
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 from funpayparsers.types.enums import SubcategoryFieldType
+from funpayparsers.types.subcategory_structure import AliasSource
 
 from funpaybotengine.types.base import FunPayObject
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.types.offers import OfferFields
+    from funpaybotengine.types.offers import OfferPreview, OfferFields
     from funpaybotengine.types.pages.offer_page import OfferPage
+    from funpaybotengine.types.pages.order_page import OrderPage
 
 
 class FieldCondition(FunPayObject, BaseModel):
@@ -221,7 +224,22 @@ class SubcategoryStructure(FunPayObject, BaseModel):
             return None
         return ids[0]
 
-    def add_alias(self, field_id: str, alias: str) -> None:
+    _alias_sources: dict[tuple[str, str], AliasSource] = PrivateAttr(default_factory=dict)
+    """
+    Provenance map: ``(field_id, alias_casefold) → AliasSource``.
+
+    Tracks which enrich-source registered each alias. Defaults to
+    :attr:`AliasSource.USER` for direct ``add_alias`` calls without an
+    explicit source. Use :meth:`forget_aliases_from` to selectively prune
+    aliases by source.
+    """
+
+    def add_alias(
+        self,
+        field_id: str,
+        alias: str,
+        source: AliasSource = AliasSource.USER,
+    ) -> None:
         """Register *alias* for *field_id* and invalidate cached label maps."""
         if field_id not in self.fields or not alias:
             return
@@ -229,8 +247,33 @@ class SubcategoryStructure(FunPayObject, BaseModel):
         if casefolded in self.fields[field_id].aliases:
             return
         self.fields[field_id].aliases.add(casefolded)
+        self._alias_sources[(field_id, casefolded)] = source
         self.__dict__.pop('label_map', None)
         self.__dict__.pop('lower_label_map', None)
+
+    def alias_source(self, field_id: str, alias: str) -> AliasSource | None:
+        """Return the source that registered *alias* for *field_id*, or ``None``."""
+        return self._alias_sources.get((field_id, alias.casefold()))
+
+    def forget_aliases_from(self, source: AliasSource) -> int:
+        """
+        Remove all aliases registered with *source*.
+
+        Useful for invalidation — e.g. ``forget_aliases_from(AliasSource.OFFER_PAGE)``
+        to drop value-derived aliases before re-enriching from a fresh sample.
+
+        Returns the number of aliases removed.
+        """
+        removed = 0
+        for (fid, alias), src in list(self._alias_sources.items()):
+            if src is source:
+                self.fields[fid].aliases.discard(alias)
+                del self._alias_sources[(fid, alias)]
+                removed += 1
+        if removed:
+            self.__dict__.pop('label_map', None)
+            self.__dict__.pop('lower_label_map', None)
+        return removed
 
     def enrich_from_offer(self, offer: OfferPage) -> SubcategoryStructure:
         """
@@ -258,7 +301,63 @@ class SubcategoryStructure(FunPayObject, BaseModel):
                 and any(opt.casefold() == value_cf for opt in fd.options)
             ]
             if len(matches) == 1:
-                self.add_alias(matches[0], label)
+                self.add_alias(matches[0], label, source=AliasSource.OFFER_PAGE)
+        return self
+
+    def enrich_from_order_page(self, order: OrderPage) -> SubcategoryStructure:
+        """
+        Add aliases from an ``OrderPage.lot_fields`` mapping.
+
+        Mirror of :meth:`enrich_from_offer` but operates on completed-order
+        data. Useful when callers have an OrderPage in hand (e.g. processing a
+        ``NEW_ORDER`` message) and want to seed the structure without an extra
+        OfferPage fetch.
+
+        Returns ``self`` for chaining.
+        """
+        for label, value in order.lot_fields.items():
+            if not label or label.casefold() in self.lower_label_map:
+                continue
+            value_cf = str(value).casefold()
+            matches = [
+                fid
+                for fid, fd in self.fields.items()
+                if fd.options
+                and any(opt.casefold() == value_cf for opt in fd.options)
+            ]
+            if len(matches) == 1:
+                self.add_alias(matches[0], label, source=AliasSource.ORDER_PAGE)
+        return self
+
+    def enrich_from_offer_previews(
+        self, offers: Iterable[OfferPreview]
+    ) -> SubcategoryStructure:
+        """
+        Add aliases from a batch of ``OfferPreview`` objects.
+
+        For each preview, examines ``offer.other_data`` —
+        structured ``{field_id: value}`` pairs from the listing page's
+        ``data-fields``. When the corresponding ``other_data_names[field_id]``
+        is present, registers that human-readable name as an alias for the
+        matching structure field, ensuring cross-locale lookups.
+
+        Use this when processing a SubcategoryPage / MyOffersPage /
+        ProfilePage where you already have a list of offers in memory — no
+        extra HTTP needed.
+
+        Returns ``self`` for chaining.
+        """
+        for offer in offers:
+            other_data = getattr(offer, 'other_data', None)
+            other_data_names = getattr(offer, 'other_data_names', None)
+            if not other_data or not other_data_names:
+                continue
+            for field_id in other_data:
+                if field_id not in self.fields:
+                    continue
+                name = other_data_names.get(field_id)
+                if name:
+                    self.add_alias(field_id, name, source=AliasSource.OFFER_PREVIEW)
         return self
 
     def enrich_from_offer_fields(
@@ -283,7 +382,7 @@ class SubcategoryStructure(FunPayObject, BaseModel):
         """
         for f in offer_fields.field_schema:
             if f.id in self.fields and f.label:
-                self.add_alias(f.id, f.label)
+                self.add_alias(f.id, f.label, source=AliasSource.OFFER_EDIT)
         return self
 
     @classmethod

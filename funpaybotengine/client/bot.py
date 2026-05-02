@@ -891,6 +891,12 @@ class Bot:
             except Exception:
                 pass
 
+        if page.offers:
+            # Free batch enrichment — we already have the offer previews from
+            # the listing call, so applying ``other_data_names`` aliases costs
+            # zero additional HTTP requests.
+            struct.enrich_from_offer_previews(page.offers)
+
         if enrich_from_offer_sample and page.offers:
             for offer in page.offers[:sample_size]:
                 try:
