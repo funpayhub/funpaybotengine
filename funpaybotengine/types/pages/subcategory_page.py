@@ -10,6 +10,7 @@ from funpaybotengine.types.enums import SubcategoryType
 from funpaybotengine.types.offers import OfferPreview
 from funpaybotengine.types.categories import Subcategory
 from funpaybotengine.types.pages.base import FunPayPage
+from funpaybotengine.types.subcategory_structure import SubcategoryStructure
 
 
 class SubcategoryPage(FunPayPage, BaseModel):
@@ -32,3 +33,15 @@ class SubcategoryPage(FunPayPage, BaseModel):
 
     offers: tuple[OfferPreview, ...] | None
     """Subcategory offers list."""
+
+    structure: SubcategoryStructure | None = None
+    """
+    Partial subcategory field structure, derived from the listing page's
+    ``data-fields`` JSON and per-field form groups.
+
+    This is a strict subset of the authenticated ``offerEdit`` schema:
+    listing pages omit non-filterable fields (e.g. ``TEXTAREA``, ``IMAGES``)
+    and may render option lists as button groups rather than ``<select>``.
+
+    ``None`` when the page has no ``div.lot-fields`` block (e.g. chips).
+    """
