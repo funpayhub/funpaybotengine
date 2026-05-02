@@ -17,6 +17,7 @@ from funpaybotengine.types.base import FunPayObject
 
 if TYPE_CHECKING:
     from funpaybotengine.types.offers import OfferFields
+    from funpaybotengine.types.pages.offer_page import OfferPage
 
 
 class FieldCondition(FunPayObject, BaseModel):
@@ -45,10 +46,12 @@ class FieldCondition(FunPayObject, BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _add_raw_source(cls, data: Any) -> Any:
-        # funpayparsers.FieldCondition has no raw_source — convert to dict first
+        # Parser FieldCondition is a @dataclass — convert to dict first when ingested
+        # via model_validate. Since funpayparsers PR #104 it ships its own raw_source;
+        # fall back to a synthetic value for older parsers / direct construction.
         if not isinstance(data, dict):
             data = asdict(data)
-        if 'raw_source' not in data:
+        if not data.get('raw_source'):
             data['raw_source'] = json.dumps({'field_id': data.get('field_id')})
         return data
 
@@ -89,26 +92,42 @@ class SubcategoryFieldDef(FunPayObject, BaseModel):
     ``None`` for non-select fields (``NUMERIC_RANGE``, ``TEXT``, ``TEXTAREA``, ``IMAGES``).
     """
 
+    aliases: set[str] = Field(default_factory=set)
+    """
+    Additional, casefolded label aliases for this field.
+
+    Used to bridge cross-locale label mismatches between the data-fields JSON
+    (English IDs), the filter form ``<label>`` (locale-dependent), the
+    per-offer ``param-list`` rendering, and ``OrderPage`` data labels.
+
+    Always casefolded — populated via :class:`SubcategoryStructure.add_alias`
+    or :class:`SubcategoryStructure.enrich_from_offer`.
+    """
+
     @model_validator(mode='before')
     @classmethod
     def _add_raw_source(cls, data: Any) -> Any:
-        # funpayparsers.SubcategoryFieldDef has raw_source — let from_attributes handle it
         if not isinstance(data, dict):
             return data
-        if 'raw_source' not in data:
+        if not data.get('raw_source'):
             data['raw_source'] = json.dumps({
                 'id': data.get('id'),
                 'label': data.get('label'),
             })
         return data
 
+    @field_validator('aliases', mode='after')
+    @classmethod
+    def _casefold_aliases(cls, value: set[str]) -> set[str]:
+        return {str(a).casefold() for a in value if a}
+
 
 class SubcategoryStructure(FunPayObject, BaseModel):
     """
     Derived subcategory field structure for quick lookups.
 
-    Not parsed directly from HTML — constructed from ``OfferFields.field_schema``
-    via the ``OfferFields.subcategory_structure`` property.
+    Built either from ``OfferFields`` (authenticated ``offerEdit`` page) or
+    directly from the public subcategory listing page's ``div.lot-fields``.
     """
 
     subcategory_id: int | None
@@ -125,37 +144,96 @@ class SubcategoryStructure(FunPayObject, BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _add_raw_source(cls, data: Any) -> Any:
-        # SubcategoryStructure is not parsed from HTML — generate a stable raw_source.
-        # The parser ships SubcategoryStructure as a plain @dataclass (no FunPayObject
-        # mixin, no raw_source), so when ingested via model_validate from a parser
-        # instance we must convert to dict first.
+        # Parser SubcategoryStructure is a @dataclass — convert when ingesting via
+        # model_validate. Parser ships its own raw_source since funpayparsers PR #104;
+        # we keep a fallback for older parsers / direct construction.
         if not isinstance(data, dict):
             data = asdict(data)
-        if 'raw_source' not in data:
+        if not data.get('raw_source'):
             data['raw_source'] = json.dumps({'subcategory_id': data.get('subcategory_id')})
         return data
 
     @cached_property
     def label_map(self) -> dict[str, list[str]]:
         """
-        Mapping from FunPay label to list of field IDs for reverse lookup.
+        Mapping from FunPay label (or alias) to list of field IDs for reverse lookup.
 
-        Values are lists because different fields may share the same label
-        (notably empty labels on fields that have no ``<label>`` in the form).
-        Field IDs appear in declaration order.
+        Indexes both ``f.label`` (as-is, possibly localized) and every entry in
+        ``f.aliases`` (casefolded). Values are lists because different fields
+        may share the same label/alias.
         """
         result: dict[str, list[str]] = {}
         for f in self.fields.values():
-            result.setdefault(f.label, []).append(f.id)
+            seen: set[str] = set()
+            for key in (f.label, *f.aliases):
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.setdefault(key, []).append(f.id)
         return result
 
     @cached_property
     def lower_label_map(self) -> dict[str, list[str]]:
-        """Case-insensitive variant of ``label_map`` — keys are lowercased."""
+        """Case-insensitive variant of ``label_map`` — keys are casefolded."""
         result: dict[str, list[str]] = {}
         for label, ids in self.label_map.items():
-            result.setdefault(label.lower(), []).extend(ids)
+            key = label.casefold()
+            existing = result.setdefault(key, [])
+            for fid in ids:
+                if fid not in existing:
+                    existing.append(fid)
         return result
+
+    def lookup_field_id(self, label: str) -> str | None:
+        """
+        Resolve *label* (case-insensitively) to a single field ID.
+
+        Returns ``None`` if there is no match or the match is ambiguous.
+        """
+        ids = self.lower_label_map.get(label.casefold())
+        if not ids or len(ids) > 1:
+            return None
+        return ids[0]
+
+    def add_alias(self, field_id: str, alias: str) -> None:
+        """Register *alias* for *field_id* and invalidate cached label maps."""
+        if field_id not in self.fields or not alias:
+            return
+        casefolded = alias.casefold()
+        if casefolded in self.fields[field_id].aliases:
+            return
+        self.fields[field_id].aliases.add(casefolded)
+        self.__dict__.pop('label_map', None)
+        self.__dict__.pop('lower_label_map', None)
+
+    def enrich_from_offer(self, offer: OfferPage) -> SubcategoryStructure:
+        """
+        Add aliases from an ``OfferPage.fields`` mapping.
+
+        For each ``(label, value)`` in ``offer.fields``:
+
+        * If *label* already resolves via ``label_map`` — leave it alone.
+        * Otherwise, try to match *value* against ``options`` of any
+          ``SELECT``/``DROPDOWN`` field. If exactly one field matches,
+          register *label* as an alias for that field.
+
+        Returns ``self`` for chaining. Mutates the underlying field defs.
+        """
+        for label, value in offer.fields.items():
+            if not label:
+                continue
+            if label.casefold() in self.lower_label_map:
+                continue
+            value_cf = str(value).casefold()
+            matches = [
+                fid
+                for fid, fd in self.fields.items()
+                if fd.options
+                and any(opt.casefold() == value_cf for opt in fd.options)
+            ]
+            if len(matches) == 1:
+                self.add_alias(matches[0], label)
+        return self
 
     @classmethod
     def from_offer_fields(cls, offer_fields: OfferFields) -> SubcategoryStructure:

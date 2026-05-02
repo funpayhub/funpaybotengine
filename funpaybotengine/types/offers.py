@@ -107,6 +107,17 @@ class OfferPreview(FunPayObject, BaseModel):
     subcategory_type: SubcategoryType = SubcategoryType.UNKNOWN
     """Type of the subcategory (OFFERS/CHIPS), derived from the offer URL."""
 
+    def parse_title_fields(
+        self, structure: SubcategoryStructure
+    ) -> dict[str, str | int]:
+        """
+        Extract structured field values from the comma-separated title suffix.
+
+        Delegates to :func:`funpayparsers.types.subcategory_structure._parse_title_fields`.
+        """
+        from funpayparsers.types.subcategory_structure import _parse_title_fields
+        return _parse_title_fields(self.title, structure)
+
 
 T = TypeVar('T')
 P = ParamSpec('P')

@@ -42,7 +42,12 @@ class OrderPage(FunPayPage, BaseModel):
     """Order subcategory type."""
 
     data: Annotated[Mapping[str, str], BeforeValidator(OrderPage._convert_to_immutable)]
-    """Order data (short description, full description, etc.)"""
+    """
+    Raw, flat ``param-list`` data — keys are casefolded labels.
+
+    Kept for backwards compatibility. Prefer :attr:`metadata` for stable
+    order-level fields and :attr:`lot_fields` for lot-specific fields.
+    """
 
     review: Review | None
     """Order review."""
@@ -50,39 +55,52 @@ class OrderPage(FunPayPage, BaseModel):
     chat: Chat
     """Chat with counterparty."""
 
+    metadata: Annotated[
+        Mapping[str, str], BeforeValidator(OrderPage._convert_to_immutable)
+    ] = MappingProxyType({})
+    """
+    Stable order metadata keyed by canonical name. Possible keys: ``game``,
+    ``category``, ``short_description``, ``detailed_description``, ``amount``,
+    ``open``, ``closed``, ``total``. Only keys actually present on the page
+    are stored.
+    """
+
+    lot_fields: Annotated[
+        Mapping[str, str], BeforeValidator(OrderPage._convert_to_immutable)
+    ] = MappingProxyType({})
+    """
+    Lot-specific fields from ``param-list`` — everything in :attr:`data` that
+    is not part of :attr:`metadata`. Keys are casefolded labels, values are
+    display strings. This is the input for :meth:`get_structured_fields`.
+    """
+
     @staticmethod
-    def _convert_to_immutable(value: dict[str, str]) -> MappingProxyType[str, str]:
-        return MappingProxyType(value)
+    def _convert_to_immutable(value: Mapping[str, str]) -> MappingProxyType[str, str]:
+        if isinstance(value, MappingProxyType):
+            return value
+        return MappingProxyType(dict(value))
 
     def get_structured_fields(self, structure: SubcategoryStructure) -> dict[str, str]:
-        """Return ``data`` remapped to FunPay field IDs using *structure*'s label map."""
+        """Return ``lot_fields`` remapped to FunPay field IDs using *structure*'s label map."""
         return {
-            structure.lower_label_map[label.lower()][0]: val
-            for label, val in self.data.items()
-            if label.lower() in structure.lower_label_map
+            structure.lower_label_map[label.casefold()][0]: val
+            for label, val in self.lot_fields.items()
+            if label.casefold() in structure.lower_label_map
         }
-
-    def _first_found(self, names: list[str]) -> str | None:
-        for i in names:
-            if self.data.get(i) is not None:
-                return self.data[i]
-        return None
 
     @property
     def short_description(self) -> str | None:
         """Order short description (title)."""
-
-        return self._first_found(['short description', 'краткое описание', 'короткий опис'])
+        return self.metadata.get('short_description')
 
     @property
     def full_description(self) -> str | None:
         """Order full description (detailed description)."""
-
-        return self._first_found(['detailed description', 'подробное описание', 'докладний опис'])
+        return self.metadata.get('detailed_description')
 
     @property
     def amount(self) -> int | None:
-        amount_str = self._first_found(['amount', 'количество', 'кількість'])
+        amount_str = self.metadata.get('amount')
         if not amount_str:
             return None
         return int(re.search(r'\d+', amount_str).group())  # type: ignore[union-attr]
@@ -91,8 +109,7 @@ class OrderPage(FunPayPage, BaseModel):
     @property
     def open_date_text(self) -> str | None:
         """Order open date."""
-
-        date_str = self._first_found(['open', 'открыт', 'відкрито'])
+        date_str = self.metadata.get('open')
         if not date_str:
             return None
         return date_str.split('\n')[0].strip()
@@ -100,8 +117,7 @@ class OrderPage(FunPayPage, BaseModel):
     @property
     def close_date_text(self) -> str | None:
         """Order close date."""
-
-        date_str = self._first_found(['closed', 'закрыт', 'закрито'])
+        date_str = self.metadata.get('closed')
         if not date_str:
             return None
         return date_str.split('\n')[0].strip()
@@ -109,20 +125,17 @@ class OrderPage(FunPayPage, BaseModel):
     @property
     def order_category_name(self) -> str | None:
         """Order category name."""
-
-        return self._first_found(['game', 'игра', 'гра'])
+        return self.metadata.get('game')
 
     @property
     def order_subcategory_name(self) -> str | None:
         """Order subcategory name."""
-
-        return self._first_found(['category', 'категория', 'категорія'])
+        return self.metadata.get('category')
 
     @property
     def order_total(self) -> MoneyValue | None:
         """Order total."""
-
-        value = self._first_found(['total', 'сумма', 'сума'])
+        value = self.metadata.get('total')
         if not value:
             return None
         money_value_string = parse_money_value_string(value)

@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ('OrderPreview', 'OrderPreviewsBatch')
 
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, PrivateAttr
 from funpayparsers.parsers.utils import parse_date_string
@@ -12,6 +12,10 @@ from funpayparsers.parsers.utils import parse_date_string
 from funpaybotengine.types.base import FunPayObject
 from funpaybotengine.types.enums import OrderStatus, OrderPreviewType
 from funpaybotengine.types.common import MoneyValue, UserPreview
+
+
+if TYPE_CHECKING:
+    from funpaybotengine.types.subcategory_structure import SubcategoryStructure
 
 
 class OrderPreview(FunPayObject, BaseModel):
@@ -62,6 +66,17 @@ class OrderPreview(FunPayObject, BaseModel):
         except ValueError:
             return 0
 
+    def parse_title_fields(
+        self, structure: SubcategoryStructure
+    ) -> dict[str, str | int]:
+        """
+        Extract structured field values from the comma-separated title suffix.
+
+        Delegates to :func:`funpayparsers.types.subcategory_structure._parse_title_fields`.
+        """
+        from funpayparsers.types.subcategory_structure import _parse_title_fields
+        return _parse_title_fields(self.title, structure)
+
 
 class OrderPreviewsBatch(FunPayObject):
     """
@@ -78,8 +93,8 @@ class OrderPreviewsBatch(FunPayObject):
     """
     ID of the next order to use as a cursor for pagination.
 
-    If present, this value should be included in the next request to fetch the 
-    following batch of order previews. 
+    If present, this value should be included in the next request to fetch the
+    following batch of order previews.
 
     If ``None``, there are no more orders to load.
     """
