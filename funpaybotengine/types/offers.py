@@ -586,9 +586,9 @@ class OfferFields(FunPayMutableObject, BaseModel):
 
         Applicable for common offers only.
 
-        Field name: ``fields[secrets]``
+        Field name: ``secrets``
         """
-        goods = self.fields_dict.get('fields[secrets]')
+        goods = self.fields_dict.get('secrets')
         if goods is None:
             return None
         return goods.split('\n')
@@ -596,7 +596,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     @secrets.setter
     @common_only
     def secrets(self, value: list[str] | None) -> None:
-        self.set_field('fields[secrets]', '\n'.join(value) if value is not None else None)
+        self.set_field('secrets', '\n'.join(value) if value is not None else None)
 
     @property
     def active(self) -> bool:
