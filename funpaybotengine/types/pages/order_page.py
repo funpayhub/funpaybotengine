@@ -70,8 +70,21 @@ class OrderPage(FunPayPage, BaseModel):
     ] = MappingProxyType({})
     """
     Lot-specific fields from ``param-list`` — everything in :attr:`data` that
-    is not part of :attr:`metadata`. Keys are casefolded labels, values are
-    display strings. This is the input for :meth:`get_structured_fields`.
+    is not part of :attr:`metadata` or :attr:`delivery_fields`. Keys are
+    casefolded labels, values are display strings. Input for
+    :meth:`get_structured_fields`.
+    """
+
+    delivery_fields: Annotated[
+        Mapping[str, str], BeforeValidator(OrderPage._convert_to_immutable)
+    ] = MappingProxyType({})
+    """
+    Per-order delivery-contract data supplied by the buyer (Telegram username,
+    Steam login, character name, email, …). Classified via the static
+    blacklist in funpayparsers' ``ORDER_DELIVERY_LABELS`` at parse time;
+    callers can re-classify with higher precision via
+    :meth:`reclassify_with_structure` once a ``SubcategoryStructure`` with
+    populated :attr:`SubcategoryStructure.delivery_fields` is available.
     """
 
     @staticmethod
@@ -81,12 +94,46 @@ class OrderPage(FunPayPage, BaseModel):
         return MappingProxyType(dict(value))
 
     def get_structured_fields(self, structure: SubcategoryStructure) -> dict[str, str]:
-        """Return ``lot_fields`` remapped to FunPay field IDs using *structure*'s label map."""
-        return {
-            structure.lower_label_map[label.casefold()][0]: val
-            for label, val in self.lot_fields.items()
-            if label.casefold() in structure.lower_label_map
-        }
+        """
+        Return ``lot_fields`` remapped to FunPay field IDs using *structure*'s
+        label map. When labels are shared by multiple structure fields, uses
+        the conditions of those fields against already-resolved entries to
+        disambiguate.
+        """
+        result: dict[str, str] = {}
+        for label, val in self.lot_fields.items():
+            fid = structure.lookup_field_id(label, context=result)
+            if fid is None:
+                ids = structure.lower_label_map.get(label.casefold())
+                if ids:
+                    fid = ids[0]
+            if fid is not None:
+                result[fid] = val
+        return result
+
+    def reclassify_with_structure(
+        self, structure: SubcategoryStructure
+    ) -> OrderPage:
+        """
+        Re-split ``data`` using ``structure.delivery_fields`` for
+        high-precision delivery classification. Useful when the page was
+        originally parsed without structure context (only the static
+        blacklist applied), and a populated ``SubcategoryStructure`` has
+        since become available.
+
+        Mutates ``self.lot_fields`` and ``self.delivery_fields``; returns
+        ``self`` for chaining.
+        """
+        from funpayparsers.types.pages.order_page import _split_order_data
+        extra = frozenset(
+            label.casefold() for label in structure.delivery_fields.values()
+        )
+        _, lot_fields, delivery_fields = _split_order_data(
+            dict(self.data), extra_delivery_labels=extra,
+        )
+        object.__setattr__(self, 'lot_fields', MappingProxyType(lot_fields))
+        object.__setattr__(self, 'delivery_fields', MappingProxyType(delivery_fields))
+        return self
 
     @property
     def short_description(self) -> str | None:

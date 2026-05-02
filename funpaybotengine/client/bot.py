@@ -902,6 +902,9 @@ class Bot:
                 try:
                     op = await self.get_offer_page(offer.id)
                     struct.enrich_from_offer(op)
+                    # Same OfferPage carries the order-form delivery spec —
+                    # accumulate per-subcategory delivery labels for free.
+                    struct.enrich_delivery_fields_from_offer(op)
                     break
                 except Exception:
                     continue

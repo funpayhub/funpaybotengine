@@ -39,6 +39,20 @@ class OfferPage(FunPayPage):
     images: list[str] = Field(default_factory=list)
     """Full-size image URLs extracted from attachment items in ``div.param-list``."""
 
+    delivery_fields_spec: dict[str, str] = Field(default_factory=dict)
+    """
+    Map of ``input.name → label`` for per-order delivery-contract fields
+    rendered in the buyer's order form (``<form action="/orders/new">``).
+
+    Keys are FunPay form input names (e.g. ``'player'``, ``'login'``);
+    values are localized labels shown to the buyer (e.g.
+    ``'Telegram Username'``, ``'Логин Steam'``). Includes both visible and
+    conditionally-hidden form-groups.
+
+    Use :meth:`SubcategoryStructure.enrich_delivery_fields_from_offer` to
+    accumulate these into a per-subcategory delivery-label index.
+    """
+
     def get_structured_fields(self, structure: SubcategoryStructure) -> dict[str, str]:
         """Return ``fields`` remapped to FunPay field IDs using *structure*'s label map."""
         return {
