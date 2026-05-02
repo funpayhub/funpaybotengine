@@ -816,13 +816,91 @@ class Bot:
         self,
         subcategory_type: SubcategoryType,
         subcategory_id: int,
+        options: 'SubcategoryPageParsingOptions | None' = None,
     ) -> SubcategoryPage:
+        """
+        Fetch a subcategory listing page.
+
+        :param options: Optional parser options. Pass with
+            ``fallback_structure_from_chips_offers=True`` to synthesize a
+            ``SubcategoryStructure`` for CHIPS subcategories without a
+            ``div.lot-fields`` block.
+        """
         return (
             await GetSubcategoryPage(
                 type=subcategory_type,
                 subcategory_id=subcategory_id,
+                options=options,
             ).execute(self)
         ).response_obj
+
+    async def get_subcategory_structure(
+        self,
+        subcategory_type: SubcategoryType,
+        subcategory_id: int,
+        *,
+        synthesize_chips: bool = True,
+        seed_from_offer_fields: bool = True,
+        enrich_from_offer_sample: bool = True,
+        sample_size: int = 5,
+    ) -> 'SubcategoryStructure | None':
+        """
+        High-level helper: fetch the structure for a subcategory and apply
+        every available enrichment in one call.
+
+        Pipeline:
+          1. ``get_subcategory_page`` (with ``fallback_structure_from_chips_offers``
+             when *synthesize_chips* and the subcategory is CHIPS).
+          2. If structure exists and *seed_from_offer_fields*, fetch
+             ``OfferFields`` for the first reachable offer in the listing and
+             apply :meth:`SubcategoryStructure.enrich_from_offer_fields`. This
+             seeds canonical localized labels (``Регион``, ``Логин Steam``, …)
+             for TEXT fields that have no ``options`` and therefore cannot be
+             auto-aliased from value matching alone.
+          3. If structure exists and *enrich_from_offer_sample*, walk up to
+             *sample_size* offers in the listing and apply
+             :meth:`SubcategoryStructure.enrich_from_offer` (one OfferPage at
+             a time) until at least one succeeds.
+
+        Returns ``None`` if the subcategory has no structure and synthesis is
+        disabled / unavailable.
+        """
+        from funpayparsers.parsers.page_parsers.subcategory_page_parser import (
+            SubcategoryPageParsingOptions,
+        )
+        opts: SubcategoryPageParsingOptions | None = None
+        if synthesize_chips and subcategory_type is SubcategoryType.CHIPS:
+            opts = SubcategoryPageParsingOptions(
+                fallback_structure_from_chips_offers=True,
+            )
+        page = await self.get_subcategory_page(subcategory_type, subcategory_id, opts)
+        struct = page.structure
+        if struct is None:
+            return None
+
+        if seed_from_offer_fields:
+            # Use the (subcategory_type, subcategory_id) form so we don't need
+            # to own the offer — this fetches the canonical localized
+            # ``offerEdit`` field schema for this subcategory directly.
+            try:
+                of = await self.get_offer_fields(
+                    subcategory_type=subcategory_type,
+                    subcategory_id=subcategory_id,
+                )
+                struct.enrich_from_offer_fields(of)
+            except Exception:
+                pass
+
+        if enrich_from_offer_sample and page.offers:
+            for offer in page.offers[:sample_size]:
+                try:
+                    op = await self.get_offer_page(offer.id)
+                    struct.enrich_from_offer(op)
+                    break
+                except Exception:
+                    continue
+
+        return struct
 
     async def get_offer_page(
         self,

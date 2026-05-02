@@ -6,7 +6,7 @@ __all__ = ('FieldCondition', 'SubcategoryFieldDef', 'SubcategoryStructure')
 
 import json
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from functools import cached_property
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -100,8 +100,9 @@ class SubcategoryFieldDef(FunPayObject, BaseModel):
     (English IDs), the filter form ``<label>`` (locale-dependent), the
     per-offer ``param-list`` rendering, and ``OrderPage`` data labels.
 
-    Always casefolded — populated via :class:`SubcategoryStructure.add_alias`
-    or :class:`SubcategoryStructure.enrich_from_offer`.
+    Always casefolded. The ``label`` itself is auto-added by the post-validator,
+    so callers never need to pass it explicitly. Additional aliases can be
+    appended via :meth:`SubcategoryStructure.add_alias`.
     """
 
     @model_validator(mode='before')
@@ -116,10 +117,18 @@ class SubcategoryFieldDef(FunPayObject, BaseModel):
             })
         return data
 
-    @field_validator('aliases', mode='after')
-    @classmethod
-    def _casefold_aliases(cls, value: set[str]) -> set[str]:
-        return {str(a).casefold() for a in value if a}
+    @model_validator(mode='after')
+    def _seed_aliases_with_label(self) -> SubcategoryFieldDef:
+        # Mirror funpayparsers SubcategoryFieldDef.__post_init__: casefold
+        # all incoming aliases and seed with the canonical localized label
+        # so single-source structures (just ``label``) still resolve via
+        # ``lookup_field_id(label)`` without an explicit ``add_alias`` call.
+        # Bypass validate_assignment to avoid re-triggering this validator.
+        seeded = {str(a).casefold() for a in self.aliases if a}
+        if self.label:
+            seeded.add(self.label.casefold())
+        object.__setattr__(self, 'aliases', seeded)
+        return self
 
 
 class SubcategoryStructure(FunPayObject, BaseModel):
@@ -140,6 +149,23 @@ class SubcategoryStructure(FunPayObject, BaseModel):
     Use ``fields[field_id]`` for O(1) lookup by ID,
     or iterate over ``fields.values()`` to process fields in declaration order.
     """
+
+    derived_from: Literal['lot_fields', 'chips_offers'] = 'lot_fields'
+    """
+    Provenance of this structure.
+
+    * ``'lot_fields'`` — authoritative: parsed from a ``div.lot-fields`` block
+      (listing page or authenticated ``offerEdit`` form).
+    * ``'chips_offers'`` — synthetic: inferred from the union of
+      ``OfferPreview.other_data`` keys/values across CHIPS offers when the
+      listing page has no ``div.lot-fields`` block. Field types default to
+      ``SELECT``, options accumulate first-seen values.
+    """
+
+    @property
+    def is_synthetic(self) -> bool:
+        """``True`` iff ``derived_from`` is anything other than ``'lot_fields'``."""
+        return self.derived_from != 'lot_fields'
 
     @model_validator(mode='before')
     @classmethod
@@ -233,6 +259,31 @@ class SubcategoryStructure(FunPayObject, BaseModel):
             ]
             if len(matches) == 1:
                 self.add_alias(matches[0], label)
+        return self
+
+    def enrich_from_offer_fields(
+        self, offer_fields: OfferFields
+    ) -> SubcategoryStructure:
+        """
+        Add aliases from an authenticated ``OfferFields`` schema.
+
+        Each ``SubcategoryFieldDef`` in ``offer_fields.field_schema`` carries a
+        canonical localized ``label`` (text from ``<label class="control-label">``
+        on the ``offerEdit`` form). Register that label as an alias for the
+        matching field id in *self*.
+
+        Use this once per subcategory to seed the structure with the canonical
+        localized labels FunPay uses elsewhere (``OrderPage.lot_fields`` keys,
+        ``OfferPage.fields`` keys), bridging the listing-form / offer-page
+        locale gap. Especially useful for TEXT fields (``region``, ``login``,
+        …) that have no ``options`` and therefore cannot be auto-aliased via
+        :meth:`enrich_from_offer`.
+
+        Returns ``self`` for chaining. Mutates the underlying field defs.
+        """
+        for f in offer_fields.field_schema:
+            if f.id in self.fields and f.label:
+                self.add_alias(f.id, f.label)
         return self
 
     @classmethod
