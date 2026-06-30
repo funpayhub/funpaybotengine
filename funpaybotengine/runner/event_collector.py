@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar, cast
 from itertools import chain
+from collections import ChainMap
 from collections.abc import Callable
 
 from funpaybotengine.types import PrivateChatPreview
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from funpaybotengine.storage.base import Storage
     from funpaybotengine.types.orders import OrderPreview
     from funpaybotengine.types.updates import RunnerResponse
-from collections import ChainMap
 
 
 CHAT_EVENTS = ChatChangedEvent | NewMessageEvent
@@ -103,6 +103,7 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
                 except UnexpectedHTTPStatusError:
                     if not attempts:
                         raise
+            return None
 
         return inner  # type: ignore
 
@@ -324,7 +325,8 @@ class EventCollector:
                 if from_id != 0:
                     if from_id < message.id <= to_id:
                         logger.debug(
-                            'New message in chat %r (%r): %r (from IDs difference: %r < %r <= %r).',
+                            'New message in chat %r (%r): %r '
+                            '(from IDs difference: %r < %r <= %r).',
                             chat_event.chat_preview.username,
                             chat_event.chat_preview.id,
                             message.id,

@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ('RaiseOffers',)
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from collections.abc import Sequence
 
 from pydantic import Field
@@ -12,8 +12,8 @@ from typing_extensions import Annotated
 
 from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
-from funpaybotengine.client.session.http_methods import HTTPMethod
 from funpaybotengine.types.common import RaiseOffersResponse
+from funpaybotengine.client.session.http_methods import HTTPMethod
 
 
 if TYPE_CHECKING:
@@ -47,4 +47,4 @@ class RaiseOffers(FunPayMethod[RaiseOffersResponse]):
 
     async def parse_result(self, response: RawResponse[bool]) -> dict[str, Any]:
         data = json.loads(response.raw_response)
-        return {'raw_source': response.raw_response} | data
+        return {'raw_source': response.raw_response} | cast(dict[str, Any], data)

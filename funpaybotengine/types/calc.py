@@ -16,7 +16,8 @@ from funpaybotengine.types.common import MoneyValue
 
 class MethodResult(FunPayObject, BaseModel):
     """
-    Represents a result of offer price calculation method (`lots/calc`) for a single payment method.
+    Represents a result of offer price calculation method (`lots/calc`) for a single
+    payment method.
     """
 
     name: str = ''

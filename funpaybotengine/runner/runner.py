@@ -9,7 +9,7 @@ import string
 import asyncio
 from typing import TYPE_CHECKING, Any
 from dataclasses import field, dataclass
-from collections.abc import Iterator, AsyncGenerator
+from collections.abc import Iterator, Sequence, AsyncGenerator
 
 from funpaybotengine.loggers import runner_logger
 from funpaybotengine.exceptions import UnauthorizedError, BotUnauthenticatedError
@@ -41,7 +41,7 @@ class EventsStack:
     def __setitem__(self, item: Any, value: Any) -> None:
         self.data[item] = value
 
-    def __iter__(self) -> Iterator[RunnerEvent[Any]]:
+    def __iter__(self) -> Iterator[RunnerEvent[Any] | BotEngineEvent[Any]]:
         return iter(self.events)
 
     def get(self, value: str, fallback: Any = None) -> Any:
@@ -60,7 +60,7 @@ class Runner:
         self,
         config: RunnerConfig | None = None,
         session_storage: Storage | None = None,
-    ) -> AsyncGenerator[tuple[RunnerEvent[Any], EventsStack], None]:
+    ) -> AsyncGenerator[tuple[RunnerEvent[Any] | BotEngineEvent[Any], EventsStack], None]:
         config = config or RunnerConfig()
         collector = EventCollector(
             self.bot,
@@ -74,7 +74,7 @@ class Runner:
         sleep_time: float | None = None
         while True:
             start = time.time()
-            result: list[RunnerEvent[Any] | BotEngineEvent[Any]] = []
+            result: Sequence[RunnerEvent[Any] | BotEngineEvent[Any]] = ()
 
             try:
                 result = await collector.get_events()
@@ -82,7 +82,7 @@ class Runner:
                     backoff.reset()
                     runner_logger.info('Connection established. Continuing collecting events.')
                     if config.on_unauthenticated_error_policy == 'event':
-                        result.insert(0, BotAuthenticatedEvent(object=None))
+                        result = (BotAuthenticatedEvent(object=None), *result)
 
             except (BotUnauthenticatedError, UnauthorizedError) as e:
                 runner_logger.warning(
@@ -98,9 +98,9 @@ class Runner:
                         'Current attempt: %d. Delay: %f.', backoff.counter, backoff.current_delay
                     )
                     if backoff.counter == 1 and config.on_unauthenticated_error_policy == 'event':
-                        result = [
-                            BotUnauthenticatedEvent(object=None, delay=backoff.current_delay)
-                        ]
+                        result = (
+                            BotUnauthenticatedEvent(object=None, delay=backoff.current_delay),
+                        )
 
                 elif config.on_unauthenticated_error_policy == 'stop':
                     return
@@ -116,7 +116,7 @@ class Runner:
 
             events_stack = EventsStack(events=())
             if not backoff.counter:
-                result.insert(0, NewEventsPack(object=events_stack.id))
+                result = (NewEventsPack(object=events_stack.id), *result)
             events_stack.events = tuple(result)
 
             for i in events_stack:

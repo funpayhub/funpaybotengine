@@ -25,9 +25,9 @@ from funpaybotengine.types import (
     TransactionFilter,
     OrderPreviewsBatch,
     PrivateChatPreview,
+    RaiseOffersResponse,
     TransactionPreviewsBatch,
     CurrentlyViewingOfferInfo,
-    RaiseOffersResponse
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -466,6 +466,8 @@ class Bot:
     async def logout(self) -> bool:
         if self._logout_token is None:
             await self.update()
+        if self._logout_token is None:
+            raise BotNotInitializedError(self)
 
         return (await Logout(logout_token=self._logout_token).execute(self)).response_obj
 
@@ -602,7 +604,8 @@ class Bot:
 
         :param args: Tuple of (chat_id, after_message_id)
 
-        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects, sorted from oldest to newest.
+        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects,
+            sorted from oldest to newest.
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
