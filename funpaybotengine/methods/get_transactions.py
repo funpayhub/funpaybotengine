@@ -33,7 +33,7 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
     def __init__(
         self,
         filter: TransactionFilter | str = TransactionFilter.ALL,
-        from_transaction_id: int | None = None,
+        from_transaction_id: int = 0,
         locale: Language | None = None,
     ):
         super().__init__(
@@ -44,6 +44,7 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
             allow_anonymous=False,
             allow_uninitialized=False,
             data=make_data,
+            context=make_context,
             filter=filter,
             from_transaction_id=from_transaction_id,
         )
@@ -55,3 +56,7 @@ async def make_data(method: GetTransactions, bot: Bot) -> dict[str, Any]:
         'continue': str(method.from_transaction_id) if method.from_transaction_id > 0 else '',
         'user_id': str(bot.userid),
     }
+
+
+async def make_context(method: GetTransactions, bot: Bot) -> dict[str, Any]:
+    return {'transaction_filter': method.filter}

@@ -4,6 +4,7 @@ from __future__ import annotations
 __all__ = ('TransactionPreview', 'TransactionInfo', 'TransactionPreviewsBatch')
 
 
+from typing import Any
 from types import MappingProxyType
 from collections.abc import Mapping
 
@@ -84,7 +85,22 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     """ID of the user to whom all transactions in this batch belong."""
 
     filter: TransactionFilter | None
-    """Transactions filter applied to the current batch."""
+    """
+    Transactions filter applied to the current batch.
+
+    The filter passed to the request takes precedence; the value scraped from the
+    response HTML is only a fallback, since FunPay omits the hidden ``filter`` input
+    in some responses.
+
+    ``None`` means the filter is unknown, which is not the same as
+    ``TransactionFilter.ALL``.
+    """
+
+    def model_post_init(self, context: dict[Any, Any]) -> None:
+        super().model_post_init(context)
+        requested_filter = context.get('transaction_filter') if context else None
+        if isinstance(requested_filter, TransactionFilter):
+            self.filter = requested_filter
 
     @field_validator('filter', mode='before')
     @classmethod
@@ -112,8 +128,10 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     async def next_batch(self) -> TransactionPreviewsBatch:
         if not self.next_transaction_id:
             raise ValueError('Last batch.')
+        if self.filter is None:
+            raise ValueError('Unknown transaction filter.')
 
         return await self.get_bound_bot().get_transactions(
             from_transaction_id=self.next_transaction_id,
-            filter=self.filter or '',
+            filter=self.filter,
         )
