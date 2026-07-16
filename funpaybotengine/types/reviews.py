@@ -126,3 +126,21 @@ class ReviewsBatch(FunPayObject, BaseModel):
     If present, this value should be included in the next request to fetch
     the following batch of reviews. If ``None``, there are no more reviews to load.
     """
+
+    async def next_batch(self) -> ReviewsBatch:
+        if not self.next_review_id:
+            raise ValueError('Last batch.')
+
+        if self.user_id is None:
+            raise ValueError('Unknown user id.')
+
+        # Imported lazily to avoid a circular import between types and methods.
+        from funpaybotengine.methods.get_reviews import GetReviews
+
+        return (
+            await GetReviews(
+                user_id=self.user_id,
+                from_review_id=self.next_review_id,
+                filter=self.filter or '',
+            ).execute(self.get_bound_bot())
+        ).response_obj
