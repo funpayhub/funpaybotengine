@@ -49,6 +49,9 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
             from_transaction_id=from_transaction_id,
         )
 
+        if self.filter is TransactionFilter.UNKNOWN:
+            raise ValueError(f'Unknown filter.')
+
     async def transform_result(
         self,
         parsing_result: Any,

@@ -118,8 +118,6 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     async def next_batch(self) -> TransactionPreviewsBatch:
         if not self.next_transaction_id:
             raise ValueError('Last batch.')
-        if self.filter is TransactionFilter.UNKNOWN:
-            raise ValueError('Unknown transaction filter.')
 
         return await self.get_bound_bot().get_transactions(
             from_transaction_id=self.next_transaction_id,
