@@ -54,9 +54,6 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
         parsing_result: Any,
         response: RawResponse[Any],
     ) -> TransactionPreviewsBatch:
-        # Stamp the batch with the filter that was actually requested, rather than
-        # leaking it through the validation context (which every nested model sees).
-        # The scraped value stays only as a fallback for hand-built objects.
         batch = await super().transform_result(parsing_result, response)
         batch.filter = self.filter
         return batch

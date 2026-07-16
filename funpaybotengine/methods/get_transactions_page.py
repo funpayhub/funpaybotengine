@@ -39,9 +39,6 @@ class GetTransactionsPage(FunPayMethod[TransactionsPage], BaseModel):
         parsing_result: Any,
         response: RawResponse[Any],
     ) -> TransactionsPage:
-        # The balance page always renders an unfiltered transaction list, so its
-        # batch paginates as ALL. Stamp it directly instead of leaking the filter
-        # through the validation context shared by every nested model.
         page = await super().transform_result(parsing_result, response)
         if page.transactions is not None:
             page.transactions.filter = TransactionFilter.ALL
