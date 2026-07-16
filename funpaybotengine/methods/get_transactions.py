@@ -16,6 +16,7 @@ from funpaybotengine.client.session import HTTPMethod
 
 if TYPE_CHECKING:
     from funpaybotengine.client import Bot
+    from funpaybotengine.client.session.base import RawResponse
 
 
 class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
@@ -33,7 +34,7 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
     def __init__(
         self,
         filter: TransactionFilter | str = TransactionFilter.ALL,
-        from_transaction_id: int | None = None,
+        from_transaction_id: int = 0,
         locale: Language | None = None,
     ):
         super().__init__(
@@ -47,6 +48,18 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
             filter=filter,
             from_transaction_id=from_transaction_id,
         )
+
+        if self.filter is TransactionFilter.UNKNOWN:
+            raise ValueError(f'Unknown filter.')
+
+    async def transform_result(
+        self,
+        parsing_result: Any,
+        response: RawResponse[Any],
+    ) -> TransactionPreviewsBatch:
+        batch = await super().transform_result(parsing_result, response)
+        batch.filter = self.filter
+        return batch
 
 
 async def make_data(method: GetTransactions, bot: Bot) -> dict[str, Any]:
