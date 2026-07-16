@@ -4,6 +4,8 @@ from __future__ import annotations
 __all__ = ('GetTransactionsPage',)
 
 
+from typing import TYPE_CHECKING, Any
+
 from pydantic import BaseModel
 from funpayparsers.parsers.page_parsers import TransactionsPageParser
 
@@ -11,6 +13,10 @@ from funpaybotengine.types.enums import Language, TransactionFilter
 from funpaybotengine.types.pages import TransactionsPage
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
+
+
+if TYPE_CHECKING:
+    from funpaybotengine.client.session.base import RawResponse
 
 
 class GetTransactionsPage(FunPayMethod[TransactionsPage], BaseModel):
@@ -26,6 +32,17 @@ class GetTransactionsPage(FunPayMethod[TransactionsPage], BaseModel):
             parser_cls=TransactionsPageParser,
             allow_anonymous=False,
             allow_uninitialized=True,
-            # The balance page always renders an unfiltered transaction list.
-            context={'transaction_filter': TransactionFilter.ALL},
         )
+
+    async def transform_result(
+        self,
+        parsing_result: Any,
+        response: RawResponse[Any],
+    ) -> TransactionsPage:
+        # The balance page always renders an unfiltered transaction list, so its
+        # batch paginates as ALL. Stamp it directly instead of leaking the filter
+        # through the validation context shared by every nested model.
+        page = await super().transform_result(parsing_result, response)
+        if page.transactions is not None:
+            page.transactions.filter = TransactionFilter.ALL
+        return page

@@ -16,6 +16,7 @@ from funpaybotengine.client.session import HTTPMethod
 
 if TYPE_CHECKING:
     from funpaybotengine.client import Bot
+    from funpaybotengine.client.session.base import RawResponse
 
 
 class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
@@ -44,10 +45,21 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch], BaseModel):
             allow_anonymous=False,
             allow_uninitialized=False,
             data=make_data,
-            context=make_context,
             filter=filter,
             from_transaction_id=from_transaction_id,
         )
+
+    async def transform_result(
+        self,
+        parsing_result: Any,
+        response: RawResponse[Any],
+    ) -> TransactionPreviewsBatch:
+        # Stamp the batch with the filter that was actually requested, rather than
+        # leaking it through the validation context (which every nested model sees).
+        # The scraped value stays only as a fallback for hand-built objects.
+        batch = await super().transform_result(parsing_result, response)
+        batch.filter = self.filter
+        return batch
 
 
 async def make_data(method: GetTransactions, bot: Bot) -> dict[str, Any]:
@@ -56,7 +68,3 @@ async def make_data(method: GetTransactions, bot: Bot) -> dict[str, Any]:
         'continue': str(method.from_transaction_id) if method.from_transaction_id > 0 else '',
         'user_id': str(bot.userid),
     }
-
-
-async def make_context(method: GetTransactions, bot: Bot) -> dict[str, Any]:
-    return {'transaction_filter': method.filter}

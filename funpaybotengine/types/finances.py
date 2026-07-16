@@ -4,7 +4,6 @@ from __future__ import annotations
 __all__ = ('TransactionPreview', 'TransactionInfo', 'TransactionPreviewsBatch')
 
 
-from typing import Any
 from types import MappingProxyType
 from collections.abc import Mapping
 
@@ -88,19 +87,14 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     """
     Transactions filter applied to the current batch.
 
-    The filter passed to the request takes precedence; the value scraped from the
-    response HTML is only a fallback, since FunPay omits the hidden ``filter`` input
-    in some responses.
+    The building method stamps this with the filter that was actually requested
+    (see ``GetTransactions.transform_result``). The value scraped from the response
+    HTML is only a fallback for hand-built objects, since FunPay omits the hidden
+    ``filter`` input in some responses.
 
     ``None`` means the filter is unknown, which is not the same as
     ``TransactionFilter.ALL``.
     """
-
-    def model_post_init(self, context: dict[Any, Any]) -> None:
-        super().model_post_init(context)
-        requested_filter = context.get('transaction_filter') if context else None
-        if isinstance(requested_filter, TransactionFilter):
-            self.filter = requested_filter
 
     @field_validator('filter', mode='before')
     @classmethod
