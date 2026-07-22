@@ -114,7 +114,7 @@ from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
-    from funpaybotengine.dispatching.routers.dispatcher import Dispatcher
+    from funpaybotengine.dispatching.dispatcher import Dispatcher
 
 
 F = TypeVar('F', bound=Callable[..., Any])

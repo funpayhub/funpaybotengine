@@ -14,7 +14,7 @@ from typing import Any, Generic, TypeVar
 from types import MappingProxyType
 
 from pydantic import Field, PrivateAttr
-from eventry.asyncio.event import Event as EventryEvent
+from eventry.event import Event as EventryEvent
 
 from funpaybotengine.base import BindableObject
 
@@ -33,7 +33,7 @@ class Event(EventryEvent, BindableObject, Generic[EventObject], event_name='even
     _flags: set[Any] = PrivateAttr(default_factory=set)
 
     @property
-    def event_context_injection(self) -> dict[str, Any]:
+    def context_injection(self) -> dict[str, Any]:
         return {'object': self.object}
 
     def __hash__(self) -> int:
@@ -77,8 +77,8 @@ class RunnerEvent(Event[EventObject], event_name='runner'):
     tag: str | None = Field(frozen=True)
 
     @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
+    def context_injection(self) -> dict[str, Any]:
+        injection = super().context_injection
         injection['tag'] = self.tag
         return injection
 
@@ -90,8 +90,8 @@ class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
     event: Event[Any] = Field(frozen=True)
 
     @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
+    def context_injection(self) -> dict[str, Any]:
+        injection = super().context_injection
         injection.update({'on_event': self.event, 'exception': self.object})
         return injection
 
@@ -100,8 +100,8 @@ class BotUnauthenticatedEvent(BotEngineEvent[float], event_name='unauthorized'):
     delay: float
 
     @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
+    def context_injection(self) -> dict[str, Any]:
+        injection = super().context_injection
         injection.update({'delay': self.delay})
         return injection
 
