@@ -54,7 +54,6 @@ if TYPE_CHECKING:
     from funpaybotengine.storage.base import Storage
     from funpaybotengine.types.orders import OrderPreview
     from funpaybotengine.types.updates import RunnerResponse
-from collections import ChainMap
 
 
 CHAT_EVENTS = ChatChangedEvent | NewMessageEvent
@@ -109,66 +108,6 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
         return inner  # type: ignore
 
     return decorator
-
-
-class EventsPack:
-    def __init__(self, timestamp: int | float) -> None:
-        # {
-        #   ChatChangedEvent: {
-        #    NewMessageEvent: Related order/review event or None,
-        #    NewMessageEvent2: Related order/review event or None,
-        #   },
-        #   ChatChangedEvent2: { ... }
-        self.tree: dict[
-            ChatChangedEvent,
-            dict[NewMessageEvent, OrderEvent | ReviewEvent | None],
-        ] = {}
-        self.sales_related: list[NewMessageEvent] = []
-        self.purchases_related: list[NewMessageEvent] = []
-        self.unknown_order_related: list[NewMessageEvent] = []
-        self.review_related: list[NewMessageEvent] = []
-        self.timestamp = timestamp
-
-    @property
-    def chainmap(self) -> ChainMap[NewMessageEvent, OrderEvent | ReviewEvent | None]:
-        return ChainMap(*self.tree.values())
-
-    @property
-    def total_events(self) -> list[RunnerEvent[Any]]:
-        total: list[RunnerEvent[Any]] = []
-        for chat_event, dict_ in self.tree.items():
-            total.append(chat_event)
-            for message_event, from_message_event in dict_.items():
-                total.append(message_event)
-                if from_message_event is not None:
-                    total.append(from_message_event)
-        return total
-
-    def add_chat_event(self, event: ChatChangedEvent) -> None:
-        self.tree[event] = {}
-
-    def add_message_event(self, c: ChatChangedEvent, e: NewMessageEvent, /) -> None:
-        meta = e.message.meta
-        bot = e.get_bound_bot()
-        if meta.type not in _RELATED:
-            self.tree[c][e] = None
-            return
-
-        if meta.type in _REVIEW_RELATED:
-            cls = _REVIEW_RELATED[meta.type]
-            review_event = cls(object=e.message, tag=e.tag, related_new_message_event=e).as_(bot)
-            self.tree[c][e] = review_event
-            return
-
-        # if in order_related
-        buyer_id, seller_id, uid = meta.buyer_id, meta.seller_id, bot.userid
-        if buyer_id:
-            self.purchases_related.append(e) if buyer_id == uid else self.sales_related.append(e)
-        elif meta.seller_id:
-            self.sales_related.append(e) if seller_id == uid else self.purchases_related.append(e)
-        else:
-            self.unknown_order_related.append(e)
-        self.tree[c][e] = None
 
 
 @dataclass
@@ -382,38 +321,38 @@ class EventCollector:
 
     async def _make_order_events(
         self,
-        total: EventsPack,
+        pack: EventsPack2,
         order_previews: dict[str, OrderPreview],
         mode: Literal['sales', 'purchases'] = 'sales',
     ) -> None:
-        for e in total.sales_related if mode == 'sales' else total.purchases_related:
+        for e in pack.sales_related if mode == 'sales' else pack.purchases_related:
             cls = _ORDER_RELATED[e.object.meta.type][0 if mode == 'sales' else 1]
             order_event: OrderEvent = cls(
                 related_new_message_event=e, object=e.object, tag=e.tag
             ).as_(self.bot)
 
             order_event._order_preview = order_previews.get(e.object.meta.order_id or '')
-            for i in total.tree.values():
+            for i in pack.tree.values():
                 if e in i:
                     i[e] = order_event
                     break
 
-    async def make_order_events(self, total: EventsPack) -> None:
+    async def make_order_events(self, pack: EventsPack2) -> None:
         sales, purchases = {}, {}
 
         if (
-            total.purchases_related or total.unknown_order_related
+            pack.purchases_related or pack.unknown_order_related
         ) and self.config.discover_purchases:
             purchases = {i.id: i for i in await self._get_purchases()}
 
-        if (total.sales_related or total.unknown_order_related) and self.config.discover_sales:
+        if (pack.sales_related or pack.unknown_order_related) and self.config.discover_sales:
             sales = {i.id: i for i in await self._get_sales()}
 
-        for e in total.unknown_order_related:
+        for e in pack.unknown_order_related:
             await self.resolve_unknown_order_related_event(e, sales, purchases)
 
-        await self._make_order_events(total, sales, 'sales')
-        await self._make_order_events(total, purchases, 'purchases')
+        await self._make_order_events(pack, sales, 'sales')
+        await self._make_order_events(pack, purchases, 'purchases')
 
     async def get_events(self) -> list[RunnerEvent[Any]]:
         debug('Getting events...')
