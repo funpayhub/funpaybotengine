@@ -4,12 +4,16 @@ from __future__ import annotations
 __all__ = ['HandlerManager']
 
 
+from collections.abc import Callable
+
 from eventry.asyncio import HandlerManager as BaseHandlerManager
 from eventry.asyncio.middleware_manager import MiddlewareStorage
 
+from funpaybotengine.dispatching import Event
+
 
 class HandlerManager(BaseHandlerManager):
-    def __init__(self, name: str, event_filter: str | None) -> None:
+    def __init__(self, name: str, event_filter: str | Callable[[Event], bool]) -> None:
         super().__init__(name=name, event_filter=event_filter)
 
         self.middleware.set_middlewares_storage('manager.outer', MiddlewareStorage())

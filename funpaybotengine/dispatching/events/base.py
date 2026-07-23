@@ -37,7 +37,6 @@ class Event(EventryEvent, BindableObject, Generic[EventObject], event_name='even
     _data: dict[Any, Any] = PrivateAttr(default_factory=dict)
     _flags: set[Any] = PrivateAttr(default_factory=set)
 
-    @property
     def context_injection(self) -> dict[str, Any]:
         return {'object': self.object}
 
@@ -79,13 +78,10 @@ class Event(EventryEvent, BindableObject, Generic[EventObject], event_name='even
 
 
 class RunnerEvent(Event[EventObject], event_name='runner'):
-    tag: str | None = Field(frozen=True)
+    tag: str | None
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        injection = super().context_injection
-        injection['tag'] = self.tag
-        return injection
+        return super().context_injection() | {'tag': self.tag}
 
 
 class BotEngineEvent(Event[EventObject], event_name='funpaybotengine'): ...
@@ -98,27 +94,18 @@ class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
     def exception(self):
         return self.object
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        injection = super().context_injection
-        injection.update(
-            {
-                'on_event': self.context.event,
-                'exception': self.object,
-                'event_context': self.context,
-            }
-        )
-        return injection
+        return super().context_injection() | {
+            'exception': self.object,
+            'event_context': self.context,
+        }
 
 
 class BotUnauthenticatedEvent(BotEngineEvent[float], event_name='unauthorized'):
     delay: float
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        injection = super().context_injection
-        injection.update({'delay': self.delay})
-        return injection
+        return super().context_injection() | {'delay': self.delay}
 
 
 class BotAuthenticatedEvent(BotEngineEvent[None], event_name='authorized'): ...

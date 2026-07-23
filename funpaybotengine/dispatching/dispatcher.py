@@ -29,9 +29,10 @@ async def on_error_callback(ctx: RouterExecutionContext, exc: Exception) -> None
         logger.error('An error occurred while propagating error event.', exc_info=e)
 
 
-async def on_handler(
-    ctx: HandlerExecutionContext, result: Any
-): ...  # todo: do things depends on a type
+async def on_handler(ctx: HandlerExecutionContext, result: Any): ...
+
+
+# todo: do things depends on a type
 
 
 cfg = EventDispatchingConfig(on_error=on_error_callback, on_handler=on_handler)

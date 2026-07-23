@@ -54,11 +54,8 @@ class ChatChangedEvent(RunnerEvent[PrivateChatPreview], event_name='chat_changed
     def chat_preview(self) -> PrivateChatPreview:
         return self.object
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        return {
-            'chat_preview': self.chat_preview,
-        }
+        return super().context_injection() | {'chat_preview': self.chat_preview}
 
 
 class NewMessageEvent(RunnerEvent[Message], event_name='new_message'):
@@ -66,21 +63,15 @@ class NewMessageEvent(RunnerEvent[Message], event_name='new_message'):
     def message(self) -> Message:
         return self.object
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        return {
-            'message': self.message,
-        }
+        return super().context_injection() | {'message': self.message}
 
 
 class FromMessageEvent(NewMessageEvent, event_name='__from_message__'):
     related_new_message_event: NewMessageEvent
 
-    @property
     def context_injection(self) -> dict[str, Any]:
-        val = super().context_injection
-        val.update({'new_message_event': self.related_new_message_event})
-        return val
+        return super().context_injection() | {'new_message_event': self.related_new_message_event}
 
 
 class OrderEvent(FromMessageEvent, event_name='__order_event__'):
