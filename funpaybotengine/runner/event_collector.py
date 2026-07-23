@@ -269,7 +269,7 @@ class EventCollector:
             upd.related_type = 'sale'
             return
 
-        order = await self.storage.get_order_preview(upd.object.meta.order_id)  # type: ignore[arg-type]
+        order = await self.storage.get_order_preview(upd.event.message.meta.order_id or '')
         if order and order.type is not OrderPreviewType.UNKNOWN:
             upd.related_type = 'sale' if order.type is OrderPreviewType.SALE else 'purchase'
             (sales if upd.related_type == 'sale' else purchases)[order.id] = order
@@ -295,7 +295,7 @@ class EventCollector:
             e._order_preview = orders.get(u.event.object.meta.order_id or '')
             u.event = e
 
-    async def make_order_events(self, pack: EventsPack) -> None:
+    async def gen_order_events(self, pack: EventsPack) -> None:
         sales, purchases = {}, {}
         unknown = list(pack.unknown_related())
 
@@ -306,7 +306,7 @@ class EventCollector:
             unknown = list(pack.unknown_related())
 
         if (list(pack.purchases_related()) or unknown) and self.config.discover_purchases:
-            purchases = {i.id: i for i in await self._get_sales()}
+            purchases = {i.id: i for i in await self._get_purchases()}
             for e in unknown:
                 await self.resolve_order(e, sales, purchases, 'purchase')
 
@@ -315,20 +315,20 @@ class EventCollector:
     async def get_events(self) -> list[RunnerEvent[Any]]:
         debug('Getting events...')
 
-        total = await self.get_chat_changed_events()
-        if not total:
+        r = await self.get_chat_changed_events()
+        if not r:
             return []
 
-        await self.get_new_message_events(total)
-        await self.make_order_events(total)
-        await self.session_storage.save_chat_previews(*(i.event.object for i in total.updates))
+        await self.get_new_message_events(r)
+        await self.gen_order_events(r)
 
+        await self.session_storage.save_chat_previews(*(i.event.chat_preview for i in r.updates))
         await self.storage.save_order_previews(*(
             msg.event._order_preview
-            for chat in total.updates
+            for chat in r.updates
             for msg in chat.messages
             if isinstance(msg.event, be.OrderEvent) and msg.event._order_preview is not None
         ))
 
-        self.chats_upd_ts = total.timestamp
-        return total.flat()
+        self.chats_upd_ts = r.timestamp
+        return r.flat()
