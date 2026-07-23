@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('Runner', 'EventsStack')
+__all__ = ('Runner', 'EventsPack')
 
 import time
 import random
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class EventsStack:
+class EventsPack:
     events: tuple[RunnerEvent[Any] | BotEngineEvent[Any], ...]
     data: dict[Any, Any] = field(default_factory=dict)
     id: str = field(init=False, default='')
@@ -60,7 +60,7 @@ class Runner:
         self,
         config: RunnerConfig | None = None,
         session_storage: Storage | None = None,
-    ) -> AsyncGenerator[tuple[RunnerEvent[Any], EventsStack], None]:
+    ) -> AsyncGenerator[tuple[RunnerEvent[Any], EventsPack], None]:
         config = config or RunnerConfig()
         collector = EventCollector(
             self.bot,
@@ -114,7 +114,7 @@ class Runner:
                 )
                 sleep_time = backoff.current_delay
 
-            events_stack = EventsStack(events=())
+            events_stack = EventsPack(events=())
             if not backoff.counter:
                 result.insert(0, NewEventsPack(object=events_stack.id))
             events_stack.events = tuple(result)

@@ -947,20 +947,16 @@ class Bot:
         *,
         config: RunnerConfig | None = None,
         session_storage: Storage | None = None,
-        workflow_injection: dict[str, Any] | None = None,
+        context_injection: dict[str, Any] | None = None,
     ) -> None:
-        workflow_injection = workflow_injection if workflow_injection is not None else {}
+        context_injection = context_injection if context_injection is not None else {}
         try:
             async with self.session:
                 listener = self._runner.listen(config=config, session_storage=session_storage)
-                async for event, stack in listener:
-                    await dp.event_entry(
+                async for event, pack in listener:
+                    await dp.propagate_event(
                         event,
-                        event_context_injection={
-                            **workflow_injection,
-                            'events_stack': stack,
-                            'bot': self,
-                        },
+                        additional_context={**context_injection, 'events_pack': pack, 'bot': self},
                     )
         except KeyboardInterrupt:
             return
@@ -983,12 +979,8 @@ class Bot:
 
             tasks = [
                 asyncio.create_task(
-                    self._listen_events(
-                        dp,
-                        config=config,
-                        session_storage=session_storage,
-                        workflow_injection=workflow_injection,
-                    ),
+                    self._listen_events(dp, config=config, session_storage=session_storage,
+                                        context_injection=workflow_injection),
                 ),
                 asyncio.create_task(self._stop_event.wait()),
             ]
