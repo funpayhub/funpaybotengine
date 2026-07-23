@@ -48,7 +48,7 @@ class NewEventsPack(BotEngineEvent[str], event_name='new_events_pack'): ...
 
 
 class ChatChangedEvent(RunnerEvent[PrivateChatPreview], event_name='chat_changed'):
-    previous: PrivateChatPreview | None = None
+    old: PrivateChatPreview | None = None
 
     @property
     def chat_preview(self) -> PrivateChatPreview:
