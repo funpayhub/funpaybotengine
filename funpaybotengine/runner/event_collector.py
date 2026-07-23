@@ -109,9 +109,7 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
 
 @dataclass
 class MsgUpdate:
-    chat_update: ChatUpdate
     event: NewMessageEvent
-    related: OrderEvent | ReviewEvent | None = None
     related_type: Literal['sale', 'purchase', 'unknown'] | None = None
 
     def __post_init__(self) -> None:
@@ -119,13 +117,11 @@ class MsgUpdate:
         if meta.type not in _RELATED:
             return
 
-        e = self.event
         if meta.type in _REVIEW_RELATED:
-            self.related = _REVIEW_RELATED[meta.type](
-                object=e.message, tag=e.tag, related_new_message_event=e
-            )
+            self.event = _REVIEW_RELATED[meta.type](object=self.event.message, tag=self.event.tag)
+            return
 
-        bot = e.get_bound_bot()
+        bot = self.event.get_bound_bot()
         if meta.buyer_id:
             self.related_type = 'purchase' if meta.buyer_id == bot.userid else 'sale'
         elif meta.seller_id:
@@ -136,14 +132,11 @@ class MsgUpdate:
 
 @dataclass
 class ChatUpdate:
-    pack: EventsPack2
     event: ChatChangedEvent
     messages: list[MsgUpdate] = field(default_factory=list)
 
-    def add_message(self, event: NewMessageEvent) -> MsgUpdate:
-        upd = MsgUpdate(self, event)
-        self.messages.append(upd)
-        return upd
+    def add_message(self, event: NewMessageEvent):
+        self.messages.append(MsgUpdate(event))
 
     @property
     def id(self) -> tuple[int, str]:
@@ -156,7 +149,7 @@ class EventsPack2:
         self.updates: list[ChatUpdate] = []
 
     def add_chat(self, event: ChatChangedEvent) -> None:
-        self.updates.append(ChatUpdate(self, event))
+        self.updates.append(ChatUpdate(event))
 
     def sales_related(self):
         return (m for upd in self.updates for m in upd.messages if m.related_type == 'sale')
