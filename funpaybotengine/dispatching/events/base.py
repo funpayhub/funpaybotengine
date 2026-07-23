@@ -15,7 +15,7 @@ from types import MappingProxyType
 
 from pydantic import Field, PrivateAttr
 from eventry.event import Event as EventryEvent
-
+from eventry._execution_context import RouterExecutionContext, ManagerExecutionContext, HandlerExecutionContext
 from funpaybotengine.base import BindableObject
 
 
@@ -87,12 +87,16 @@ class BotEngineEvent(Event[EventObject], event_name='funpaybotengine'): ...
 
 
 class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
-    event: Event[Any] = Field(frozen=True)
+    context: RouterExecutionContext | ManagerExecutionContext | HandlerExecutionContext
+
+    @property
+    def exception(self):
+        return self.object
 
     @property
     def context_injection(self) -> dict[str, Any]:
         injection = super().context_injection
-        injection.update({'on_event': self.event, 'exception': self.object})
+        injection.update({'on_event': self.context.event, 'exception': self.object, 'event_context': self.context})
         return injection
 
 
