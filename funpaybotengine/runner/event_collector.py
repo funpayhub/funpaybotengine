@@ -175,6 +175,7 @@ class EventsPack:
 class MsgUpdate:
     event: NewMessageEvent
     related: OrderEvent | ReviewEvent | None = None
+    related_type: Literal['sale', 'purchase', 'unknown'] | None = None
 
     def __post_init__(self) -> None:
         meta = self.event.message.meta
@@ -186,6 +187,14 @@ class MsgUpdate:
             self.related = _REVIEW_RELATED[meta.type](
                 object=e.message, tag=e.tag, related_new_message_event=e
             )
+
+        bot = e.get_bound_bot()
+        if meta.buyer_id:
+            self.related_type = 'purchase' if meta.buyer_id == bot.userid else 'sale'
+        elif meta.seller_id:
+            self.related_type = 'sale' if meta.seller_id == bot.userid else 'purchase'
+        else:
+            self.related_type = 'unknown'
 
 
 @dataclass
@@ -277,7 +286,6 @@ class EventCollector:
         debug('Initializing chats...')
         result = await self._get_chat_bookmarks()
         self.chats_upd_ts = result.timestamp
-
         if not result.chat_bookmarks:
             return
 
@@ -286,7 +294,7 @@ class EventCollector:
         # UnauthorizedError should be already raised.
 
         for i in chat_previews:
-            debug(f'Chat {i.id} ({i.username}) initialized. Last message ID: {i.last_message_id}')
+            debug(f'Chat %d/%s initialized. Last msg: %d.', i.id, i.username, i.last_message_id)
         await self.session_storage.save_chat_previews(*chat_previews)
 
     async def get_chat_changed_events(self) -> EventsPack2 | None:
@@ -302,27 +310,18 @@ class EventCollector:
         debug('Fetched %d cached chats.', len(cached_chats))
 
         result = EventsPack2(resp.timestamp)
-        for cached, new in zip(reversed(cached_chats), reversed(chats)):
-            if cached and cached.last_message_id == new.last_message_id:
-                debug("Chat %d/%s hasn't changed.", new.id, new.username)
+        for old, new in zip(reversed(cached_chats), reversed(chats)):
+            if old and old.last_message_id == new.last_message_id:
+                debug('Chat %d/%s hasn\'t changed.', new.id, new.username)
                 continue
 
-            debug(
-                'New chat %d/%s: %d->%d.',
-                new.id,
-                new.username,
-                cached.last_message_id if cached else -1,
-                new.last_message_id,
-            )
-            event = ChatChangedEvent(previous=cached, object=new, tag=resp.chat_bookmarks.tag).as_(
-                self.bot
-            )
-            result.updates.append(ChatUpdate(event))
+            c_last = old.last_message_id if old else -1
+            debug('New chat %d/%s: %d->%d.', new.id, new.username, c_last, new.last_message_id)
+            e = ChatChangedEvent(previous=old, object=new, tag=resp.chat_bookmarks.tag).as_(self.bot)
+            result.updates.append(ChatUpdate(e))
 
         debug('Total chats changed: %r', len(result.updates))
-        debug(
-            'Changed chats: %r.', ', '.join(i.event.chat_preview.username for i in result.updates)
-        )
+        debug('Changed chats: %r.', ', '.join(str(i.id) for i in result.updates))
         return result
 
     async def get_new_message_events(self, pack: EventsPack2) -> None:
@@ -351,41 +350,33 @@ class EventCollector:
 
     async def resolve_unknown_order_related_event(
         self,
-        total: EventsPack,
-        unknown: NewMessageEvent,
+        update: MsgUpdate,
         sale_previews: dict[str, OrderPreview],
         purchase_previews: dict[str, OrderPreview],
     ) -> None:
-        if unknown.object.meta.order_id in purchase_previews:
-            total.purchases_related.append(unknown)
+        if update.event.object.meta.order_id in purchase_previews:
+            update.related_type = 'purchase'
             return
-        if unknown.object.meta.order_id in sale_previews:
-            total.sales_related.append(unknown)
+        if update.event.object.meta.order_id in sale_previews:
+            update.related_type = 'sale'
             return
 
-        saved_order = await self.storage.get_order_preview(unknown.object.meta.order_id)  # type: ignore[arg-type]
-        if saved_order and saved_order.type is not OrderPreviewType.UNKNOWN:
-            if saved_order.type is OrderPreviewType.PURCHASE:
-                total.purchases_related.append(unknown)
-                purchase_previews[saved_order.id] = saved_order
-            elif saved_order.type is OrderPreviewType.SALE:
-                total.sales_related.append(unknown)
-                sale_previews[saved_order.id] = saved_order
+        order = await self.storage.get_order_preview(update.object.meta.order_id)  # type: ignore[arg-type]
+        if order and order.type is not OrderPreviewType.UNKNOWN:
+            update.related_type = 'sale' if order.type is OrderPreviewType.SALE else 'purchase'
             return
 
         if self.config.discover_sales:
-            order_preview = await self._get_sales(order_id=unknown.object.meta.order_id)
+            order_preview = await self._get_sales(order_id=update.event.object.meta.order_id)
             if order_preview:
-                total.sales_related.append(unknown)
-                sale_previews[order_preview[0].id] = order_preview[0]
+                update.related_type = 'sale'
                 await self.storage.save_order_previews(order_preview[0])
                 return
 
         if self.config.discover_purchases:
-            order_preview = await self._get_purchases(order_id=unknown.object.meta.order_id)
+            order_preview = await self._get_purchases(order_id=update.event.object.meta.order_id)
             if order_preview:
-                total.purchases_related.append(unknown)
-                purchase_previews[order_preview[0].id] = order_preview[0]
+                update.related_type = 'purchase'
                 await self.storage.save_order_previews(order_preview[0])
                 return
 
@@ -419,7 +410,7 @@ class EventCollector:
             sales = {i.id: i for i in await self._get_sales()}
 
         for e in total.unknown_order_related:
-            await self.resolve_unknown_order_related_event(total, e, sales, purchases)
+            await self.resolve_unknown_order_related_event(e, sales, purchases)
 
         await self._make_order_events(total, sales, 'sales')
         await self._make_order_events(total, purchases, 'purchases')
