@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar, cast
+from dataclasses import field, dataclass
 from itertools import chain
 from collections.abc import Callable
 
@@ -88,6 +89,7 @@ _RELATED = _REVIEW_RELATED | _ORDER_RELATED
 
 
 F = TypeVar('F', bound=Callable[..., Any])
+dbg = logger.debug
 
 
 def attempts(amount: int = 0) -> Callable[[F], F]:
@@ -169,6 +171,39 @@ class EventsPack:
         self.tree[c][e] = None
 
 
+@dataclass
+class MessageUpdate:
+    event: NewMessageEvent
+    related: OrderEvent | ReviewEvent | None = None
+
+    def __post_init__(self) -> None:
+        meta = self.event.message.meta
+        if meta.type not in _RELATED:
+            return
+
+        e = self.event
+        if meta.type in _REVIEW_RELATED:
+            self.related = _REVIEW_RELATED[meta.type](
+                object=e.message, tag=e.tag, related_new_message_event=e
+            )
+
+
+@dataclass
+class ChatUpdate:
+    event: ChatChangedEvent
+    messages: list[MessageUpdate] = field(default_factory=list)
+
+    @property
+    def id_and_username(self) -> tuple[int, str]:
+        return self.event.object.id, self.event.object.username
+
+
+class EventsPack2:
+    def __init__(self, timestamp: int | float) -> None:
+        self.timestamp = timestamp
+        self.events: list[ChatUpdate] = []
+
+
 class EventCollector:
     """
     Collects updates from FunPay and transforms them into update objects
@@ -239,7 +274,7 @@ class EventCollector:
         return messages
 
     async def init_chats(self) -> None:
-        logger.debug('Initializing chats...')
+        dbg('Initializing chats...')
         result = await self._get_chat_bookmarks()
         self.last_chats_request_timestamp = result.timestamp
 
@@ -251,115 +286,95 @@ class EventCollector:
         # UnauthorizedError should be already raised.
 
         for i in chat_previews:
-            logger.debug(
+            dbg(
                 f'Chat {i.id} ({i.username}) initialized. Last message ID: {i.last_message_id}',
             )
         await self.session_storage.save_chat_previews(*chat_previews)
 
-    async def get_chat_changed_events(self) -> EventsPack | None:
-        logger.debug('Fetching chat previews...')
-        runner_response = await self._get_chat_bookmarks()
-        if not runner_response.chat_bookmarks or not runner_response.chat_bookmarks.data:
-            logger.debug('No chats fetched.')
+    async def get_chat_changed_events(self) -> EventsPack2 | None:
+        dbg('Fetching chat previews...')
+        chats = await self._get_chat_bookmarks()
+        if not chats.chat_bookmarks or not chats.chat_bookmarks.data:
+            dbg('No chats fetched.')
             return None
 
-        logger.debug('Fetched %r chats.', len(runner_response.chat_bookmarks.data.chat_previews))
-        result = EventsPack(timestamp=runner_response.timestamp)
+        dbg('Fetched %r chats.', len(chats.chat_bookmarks.data.chat_previews))
         cached_chat_previews = await self.session_storage.get_chat_previews(
-            *(i.id for i in runner_response.chat_bookmarks.data.chat_previews),
+            *(i.id for i in chats.chat_bookmarks.data.chat_previews),
         )
-        logger.debug('Fetched %r cached chats.', len(cached_chat_previews))
+        dbg('Fetched %r cached chats.', len(cached_chat_previews))
 
-        for cached_chat, chat_preview in zip(
+        result = EventsPack2(chats.timestamp)
+        for cached, new in zip(
             reversed(cached_chat_previews),
-            reversed(runner_response.chat_bookmarks.data.chat_previews),
+            reversed(chats.chat_bookmarks.data.chat_previews),
         ):
-            if cached_chat and cached_chat.last_message_id == chat_preview.last_message_id:
-                logger.debug(
-                    "Chat %r (%r) hasn't changed since last runner request.",
-                    chat_preview.id,
-                    chat_preview.username,
-                )
+            if cached and cached.last_message_id == new.last_message_id:
+                dbg("Chat %d/%s hasn't changed since last runner request.", new.id, new.username)
                 continue
 
-            logger.debug(
-                'Chat %r (%r) has changed since last runner request: %r -> %r',
-                chat_preview.id,
-                chat_preview.username,
-                cached_chat.last_message_id if cached_chat else -1,
-                chat_preview.last_message_id,
+            dbg(
+                'Chat %d/%s has changed: %d -> %d.',
+                new.id,
+                new.username,
+                cached.last_message_id if cached else -1,
+                new.last_message_id,
             )
             event = ChatChangedEvent(
-                previous=cached_chat,
-                object=chat_preview,
-                tag=runner_response.chat_bookmarks.tag,
+                previous=cached, object=new, tag=chats.chat_bookmarks.tag
             ).as_(self.bot)
+            result.events.append(ChatUpdate(event))
 
-            result.add_chat_event(event)
-
-        logger.debug('Total chat changed events: %r', len(result.tree))
-        logger.debug(
+        dbg('Total chat changed events: %r', len(result.events))
+        dbg(
             'Total changed chats: %r.',
-            ', '.join(i.chat_preview.username for i in result.tree.keys()),
+            ', '.join(i.event.chat_preview.username for i in result.events),
         )
         return result
 
-    async def get_new_message_events(self, total: EventsPack) -> None:
-        ids = [i.object.id for i in total.tree]
-        logger.debug('Getting new messages for chats %s', ', '.join(str(i) for i in ids))
+    async def get_new_message_events(self, pack: EventsPack2) -> None:
+        ids = [i.event.object.id for i in pack.events]
+        dbg('Getting new messages for chats %s', ', '.join(str(i) for i in ids))
         chat_histories = await self.get_chat_histories(ids)
 
-        for chat_event, dict_ in total.tree.items():
-            logger.debug('Processing chat %r...', chat_event.chat_preview.id)
-            from_id = chat_event.previous.last_message_id if chat_event.previous else 0
-            to_id = chat_event.object.last_message_id
-            logger.debug(
-                'IDs range for chat %r: %r-%r',
-                chat_event.chat_preview.id,
-                from_id,
-                to_id,
-            )
+        for update in pack.events:
+            dbg('Processing chat %r...', update.event.chat_preview.id)
+            from_ = update.event.previous.last_message_id if update.event.previous else 0
+            to = update.event.object.last_message_id
+            dbg('IDs range for chat %r: %r-%r', update.event.chat_preview.id, from_, to)
 
-            for message in chat_histories[chat_event.chat_preview.id]:
-                if from_id != 0:
-                    if from_id < message.id <= to_id:
-                        logger.debug(
-                            'New message in chat %r (%r): %r (from IDs difference: %r < %r <= %r).',
-                            chat_event.chat_preview.username,
-                            chat_event.chat_preview.id,
-                            message.id,
-                            from_id,
-                            message.id,
-                            to_id,
-                        )
-                    else:
-                        logger.debug(
-                            'Message %r from chat %r (%r) is not new (from IDs difference: '
-                            'not (%r < %r <= %r).',
-                            message.id,
-                            chat_event.chat_preview.username,
-                            chat_event.chat_preview.id,
-                            from_id,
-                            message.id,
-                            to_id,
+            for msg in chat_histories[update.event.chat_preview.id]:
+                if from_:
+                    if not (from_ < msg.id <= to):
+                        dbg(
+                            'Skip msg %d: chat=%d/%s, out of IDs range (%d, $d).',
+                            msg.id,
+                            *update.id_and_username,
+                            from_,
+                            to,
                         )
                         continue
-                elif (
-                    message.timestamp >= self.last_chats_request_timestamp and message.id <= to_id
-                ):
-                    logger.debug('There is no cached cha')
-                    logger.debug(
-                        'New message in chat %s: %s (from timestamp difference: %s >= %s).',
-                        chat_event.chat_preview.id,
-                        message.id,
-                        message.timestamp,
+                    dbg(
+                        'New msg %d: chat=%d/%s, inside IDs range (%d, %d).',
+                        msg.id,
+                        *update.id_and_username,
+                        from_,
+                        to,
+                    )
+
+                elif msg.timestamp >= self.last_chats_request_timestamp and msg.id <= to:
+                    dbg(
+                        'New msg %d: chat=%d/%s, timestamp diff %d >= %d).',
+                        msg.id,
+                        *update.id_and_username,
+                        msg.timestamp,
                         self.last_chats_request_timestamp,
                     )
                 else:
                     continue
 
-                message_event = NewMessageEvent(object=message, tag=None).as_(self.bot)
-                total.add_message_event(chat_event, message_event)
+                message_event = NewMessageEvent(object=msg, tag=None).as_(self.bot)
+                update.messages.append(MessageUpdate(message_event))
 
     async def resolve_unknown_order_related_event(
         self,
@@ -437,7 +452,7 @@ class EventCollector:
         await self._make_order_events(total, purchases, 'purchases')
 
     async def get_events(self) -> list[RunnerEvent[Any]]:
-        logger.debug('Getting events...')
+        dbg('Getting events...')
 
         total = await self.get_chat_changed_events()
         if not total:
@@ -447,7 +462,7 @@ class EventCollector:
         await self.make_order_events(total)
         events = total.total_events
 
-        logger.debug('Finished getting events. Total events: %s', len(events))
+        dbg('Finished getting events. Total events: %s', len(events))
 
         # Caching current state (fetched chat and order preview)
         # only after successful requests-bound job.

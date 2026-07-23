@@ -979,8 +979,12 @@ class Bot:
 
             tasks = [
                 asyncio.create_task(
-                    self._listen_events(dp, config=config, session_storage=session_storage,
-                                        context_injection=workflow_injection),
+                    self._listen_events(
+                        dp,
+                        config=config,
+                        session_storage=session_storage,
+                        context_injection=workflow_injection,
+                    ),
                 ),
                 asyncio.create_task(self._stop_event.wait()),
             ]
