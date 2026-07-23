@@ -67,14 +67,7 @@ class NewMessageEvent(RunnerEvent[Message], event_name='new_message'):
         return super().context_injection() | {'message': self.message}
 
 
-class FromMessageEvent(NewMessageEvent, event_name='__from_message__'):
-    related_new_message_event: NewMessageEvent
-
-    def context_injection(self) -> dict[str, Any]:
-        return super().context_injection() | {'new_message_event': self.related_new_message_event}
-
-
-class OrderEvent(FromMessageEvent, event_name='__order_event__'):
+class OrderEvent(NewMessageEvent, event_name='__order_event__'):
     _order_preview: OrderPreview | None = PrivateAttr(default=None)
 
     async def get_order_preview(self, update: bool = False) -> OrderPreview:
@@ -149,7 +142,7 @@ class PurchasePartiallyRefundedEvent(
 class PurchaseReopenedEvent(PurchaseStatusChangedEvent, event_name='purchase_reopened'): ...
 
 
-class ReviewEvent(FromMessageEvent, event_name='__review_event__'):
+class ReviewEvent(NewMessageEvent, event_name='__review_event__'):
     _order_page: OrderPage | None = PrivateAttr(default=None)
 
     async def get_order_page(self, update: bool = False) -> OrderPage:

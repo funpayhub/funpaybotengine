@@ -14,7 +14,7 @@ class Router(BaseRouter):
         super().__init__(name=name or f'Router{id(self)}')
 
         self.on_chat_changed = self._fpbe_mgr(events.ChatChangedEvent)
-        self.on_new_message = self._fpbe_mgr(events.NewMessageEvent)
+        self.on_new_message = self._fpbe_mgr(events.NewMessageEvent, True)
         self.on_new_sale = self._fpbe_mgr(events.NewSaleEvent)
         self.on_sale_status_changed = self._fpbe_mgr(events.SaleStatusChangedEvent, True)
         self.on_sale_closed = self._fpbe_mgr(events.SaleClosedEvent)
