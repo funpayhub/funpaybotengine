@@ -3,31 +3,31 @@ from __future__ import annotations
 
 __all__ = [
     'NewEventsPack',
-    'ChatChangedEvent',
-    'NewMessageEvent',
+    'ChatChanged',
+    'NewMessage',
     'OrderEvent',
-    'NewSaleEvent',
-    'SaleStatusChangedEvent',
-    'SaleClosedEvent',
-    'SaleClosedByAdminEvent',
-    'SaleRefundedEvent',
-    'SalePartiallyRefundedEvent',
-    'SaleReopenedEvent',
-    'SaleStatusChangedEvent',
-    'NewPurchaseEvent',
-    'PurchaseStatusChangedEvent',
-    'PurchaseClosedEvent',
-    'PurchaseClosedByAdminEvent',
-    'PurchaseRefundedEvent',
-    'PurchasePartiallyRefundedEvent',
-    'PurchaseReopenedEvent',
+    'NewSale',
+    'SaleStatusChanged',
+    'SaleClosed',
+    'SaleClosedByAdmin',
+    'SaleRefunded',
+    'SalePartiallyRefunded',
+    'SaleReopened',
+    'SaleStatusChanged',
+    'NewPurchase',
+    'PurchaseStatusChanged',
+    'PurchaseClosed',
+    'PurchaseClosedByAdmin',
+    'PurchaseRefunded',
+    'PurchasePartiallyRefunded',
+    'PurchaseReopened',
     'ReviewEvent',
-    'NewReviewEvent',
-    'NewReviewResponseEvent',
-    'ReviewChangedEvent',
-    'ReviewResponseChangedEvent',
-    'ReviewDeletedEvent',
-    'ReviewResponseDeletedEvent',
+    'NewReview',
+    'NewReviewResponse',
+    'ReviewChanged',
+    'ReviewResponseChanged',
+    'ReviewDeleted',
+    'ReviewResponseDeleted',
 ]
 
 
@@ -47,7 +47,7 @@ from .base import RunnerEvent, BotEngineEvent
 class NewEventsPack(BotEngineEvent[str], event_name='new_events_pack'): ...
 
 
-class ChatChangedEvent(RunnerEvent[PrivateChatPreview], event_name='chat_changed'):
+class ChatChanged(RunnerEvent[PrivateChatPreview], event_name='chat_changed'):
     old: PrivateChatPreview | None = None
 
     @property
@@ -58,7 +58,7 @@ class ChatChangedEvent(RunnerEvent[PrivateChatPreview], event_name='chat_changed
         return super().context_injection() | {'chat_preview': self.chat_preview}
 
 
-class NewMessageEvent(RunnerEvent[Message], event_name='new_message'):
+class NewMessage(RunnerEvent[Message], event_name='new_message'):
     @property
     def message(self) -> Message:
         return self.object
@@ -67,7 +67,7 @@ class NewMessageEvent(RunnerEvent[Message], event_name='new_message'):
         return super().context_injection() | {'message': self.message}
 
 
-class OrderEvent(NewMessageEvent, event_name='__order_event__'):
+class OrderEvent(NewMessage, event_name='__order_event__'):
     _order_preview: OrderPreview | None = PrivateAttr(default=None)
 
     async def get_order_preview(self, update: bool = False) -> OrderPreview:
@@ -94,55 +94,53 @@ class PurchaseEvent(OrderEvent, event_name='__purchase_event__'):
         return orders.orders[0]
 
 
-class NewSaleEvent(SaleEvent, event_name='new_sale'):
-    related_auto_message_events: list[NewMessageEvent] = Field(default_factory=list)
+class NewSale(SaleEvent, event_name='new_sale'):
+    related_auto_message_events: list[NewMessage] = Field(default_factory=list)
 
 
-class SaleStatusChangedEvent(SaleEvent, event_name='sale_status_changed'):
+class SaleStatusChanged(SaleEvent, event_name='sale_status_changed'):
     previous: OrderPreview | None = None
 
 
-class SaleClosedEvent(SaleStatusChangedEvent, event_name='sale_closed'): ...
+class SaleClosed(SaleStatusChanged, event_name='sale_closed'): ...
 
 
-class SaleClosedByAdminEvent(SaleClosedEvent, event_name='sale_closed_by_admin'): ...
+class SaleClosedByAdmin(SaleClosed, event_name='sale_closed_by_admin'): ...
 
 
-class SaleRefundedEvent(SaleStatusChangedEvent, event_name='sale_refunded'): ...
+class SaleRefunded(SaleStatusChanged, event_name='sale_refunded'): ...
 
 
-class SalePartiallyRefundedEvent(SaleRefundedEvent, event_name='sale_partially_refunded'): ...
+class SalePartiallyRefunded(SaleRefunded, event_name='sale_partially_refunded'): ...
 
 
-class SaleReopenedEvent(SaleStatusChangedEvent, event_name='sale_reopened'): ...
+class SaleReopened(SaleStatusChanged, event_name='sale_reopened'): ...
 
 
-class NewPurchaseEvent(PurchaseEvent, event_name='new_purchase'):
-    related_auto_message_events: list[NewMessageEvent] = Field(default_factory=list)
+class NewPurchase(PurchaseEvent, event_name='new_purchase'):
+    related_auto_message_events: list[NewMessage] = Field(default_factory=list)
 
 
-class PurchaseStatusChangedEvent(PurchaseEvent, event_name='purchase_status_changed'):
+class PurchaseStatusChanged(PurchaseEvent, event_name='purchase_status_changed'):
     previous: OrderPreview | None = None
 
 
-class PurchaseClosedEvent(PurchaseStatusChangedEvent, event_name='purchase_closed'): ...
+class PurchaseClosed(PurchaseStatusChanged, event_name='purchase_closed'): ...
 
 
-class PurchaseClosedByAdminEvent(PurchaseClosedEvent, event_name='purchase_closed_by_admin'): ...
+class PurchaseClosedByAdmin(PurchaseClosed, event_name='purchase_closed_by_admin'): ...
 
 
-class PurchaseRefundedEvent(PurchaseStatusChangedEvent, event_name='purchase_refunded'): ...
+class PurchaseRefunded(PurchaseStatusChanged, event_name='purchase_refunded'): ...
 
 
-class PurchasePartiallyRefundedEvent(
-    PurchaseRefundedEvent, event_name='purchase_partially_refunded'
-): ...
+class PurchasePartiallyRefunded(PurchaseRefunded, event_name='purchase_partially_refunded'): ...
 
 
-class PurchaseReopenedEvent(PurchaseStatusChangedEvent, event_name='purchase_reopened'): ...
+class PurchaseReopened(PurchaseStatusChanged, event_name='purchase_reopened'): ...
 
 
-class ReviewEvent(NewMessageEvent, event_name='__review_event__'):
+class ReviewEvent(NewMessage, event_name='__review_event__'):
     _order_page: OrderPage | None = PrivateAttr(default=None)
 
     async def get_order_page(self, update: bool = False) -> OrderPage:
@@ -157,19 +155,19 @@ class ReviewEvent(NewMessageEvent, event_name='__review_event__'):
         return order_page.review
 
 
-class NewReviewEvent(ReviewEvent, event_name='new_review'): ...
+class NewReview(ReviewEvent, event_name='new_review'): ...
 
 
-class ReviewChangedEvent(ReviewEvent, event_name='review_changed'): ...
+class ReviewChanged(ReviewEvent, event_name='review_changed'): ...
 
 
-class ReviewDeletedEvent(ReviewEvent, event_name='review_deleted'): ...
+class ReviewDeleted(ReviewEvent, event_name='review_deleted'): ...
 
 
-class NewReviewResponseEvent(ReviewEvent, event_name='new_review_response'): ...
+class NewReviewResponse(ReviewEvent, event_name='new_review_response'): ...
 
 
-class ReviewResponseChangedEvent(ReviewEvent, event_name='review_response_changed'): ...
+class ReviewResponseChanged(ReviewEvent, event_name='review_response_changed'): ...
 
 
-class ReviewResponseDeletedEvent(ReviewEvent, event_name='review_response_deleted'): ...
+class ReviewResponseDeleted(ReviewEvent, event_name='review_response_deleted'): ...
