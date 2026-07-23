@@ -6,8 +6,7 @@ __all__ = ['Router']
 
 from eventry.asyncio.router import Router as BaseRouter
 
-from funpaybotengine.dispatching import events
-from funpaybotengine.dispatching import HandlerManager
+from funpaybotengine.dispatching import HandlerManager, events
 
 
 class Router(BaseRouter):

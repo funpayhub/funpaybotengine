@@ -1,14 +1,13 @@
-__all__ = [
-    'MethodError',
-    'InvalidOfferFieldsError'
-]
+from __future__ import annotations
+
+
+__all__ = ['MethodError', 'InvalidOfferFieldsError']
 
 
 from .base import FunPayBotEngineError
 
 
-class MethodError(FunPayBotEngineError):
-    ...
+class MethodError(FunPayBotEngineError): ...
 
 
 class InvalidOfferFieldsError(MethodError):

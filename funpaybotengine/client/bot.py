@@ -25,9 +25,9 @@ from funpaybotengine.types import (
     TransactionFilter,
     OrderPreviewsBatch,
     PrivateChatPreview,
+    RaiseOffersResponse,
     TransactionPreviewsBatch,
     CurrentlyViewingOfferInfo,
-    RaiseOffersResponse
 )
 from funpaybotengine.utils import (
     random_runner_tag,
