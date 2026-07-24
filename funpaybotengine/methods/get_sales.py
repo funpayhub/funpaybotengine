@@ -9,7 +9,7 @@ from funpayparsers.types import Language
 from funpayparsers.parsers import OrderPreviewsParser
 
 from funpaybotengine.types import OrderPreviewsBatch
-from funpaybotengine.types.enums import OrderStatus, OrderPreviewType
+from funpaybotengine.types.enums import OrderStatus, OrderType
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
 
@@ -62,7 +62,7 @@ class GetSales(FunPayMethod[OrderPreviewsBatch], BaseModel):
             data={'continue': from_order_id} if from_order_id is not None else {},
             locale=locale,
             context={
-                'order_preview_type': OrderPreviewType.SALE,
+                'order_preview_type': OrderType.SALE,
                 'order_id_filter': order_id_filter,
                 'buyer_username_filter': buyer_username_filter,
                 'status_filter': status_filter,

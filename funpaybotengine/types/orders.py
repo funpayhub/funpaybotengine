@@ -10,7 +10,7 @@ from pydantic import BaseModel, PrivateAttr
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject
-from funpaybotengine.types.enums import OrderStatus, OrderPreviewType
+from funpaybotengine.types.enums import OrderStatus, OrderType
 from funpaybotengine.types.common import MoneyValue, UserPreview
 
 
@@ -20,9 +20,9 @@ class OrderPreview(FunPayObject, BaseModel):
     def model_post_init(self, context: dict[Any, Any]) -> None:
         super().model_post_init(context)
         if (
-            self.type is OrderPreviewType.UNKNOWN
+            self.type is OrderType.UNKNOWN
             and context
-            and isinstance(context.get('order_preview_type'), OrderPreviewType)
+            and isinstance(context.get('order_preview_type'), OrderType)
         ):
             self.type = context['order_preview_type']
 
@@ -47,7 +47,7 @@ class OrderPreview(FunPayObject, BaseModel):
     counterparty: UserPreview
     """Associated counterparty info."""
 
-    type: OrderPreviewType = OrderPreviewType.UNKNOWN
+    type: OrderType = OrderType.UNKNOWN
     """Order preview type."""
 
     @property
@@ -84,7 +84,7 @@ class OrderPreviewsBatch(FunPayObject):
     If ``None``, there are no more orders to load.
     """
 
-    _type: OrderPreviewType = PrivateAttr(OrderPreviewType.UNKNOWN)
+    _type: OrderType = PrivateAttr(OrderType.UNKNOWN)
     _order_id_filter: str | None = PrivateAttr(None)
     _buyer_username_filter: str | None = PrivateAttr(None)
     _status_filter: OrderStatus | str | None = PrivateAttr(None)
@@ -98,15 +98,15 @@ class OrderPreviewsBatch(FunPayObject):
         self._status_filter = context.get('status_filter')
         self._game_id_filter = context.get('game_id_filter')
         self._other_filters = context.get('other_filters')
-        self._type = context.get('order_preview_type', OrderPreviewType.UNKNOWN)
+        self._type = context.get('order_preview_type', OrderType.UNKNOWN)
 
     async def next_batch(self) -> OrderPreviewsBatch:
         if not self.next_order_id:
             raise ValueError('Last batch.')
-        if self.type is OrderPreviewType.UNKNOWN:
+        if self.type is OrderType.UNKNOWN:
             raise ValueError('Unknown type.')
 
-        if self.type == OrderPreviewType.SALE:
+        if self.type == OrderType.SALE:
             method_coroutine = self.get_bound_bot().get_sales(
                 from_order_id=self.next_order_id,
                 order_id_filter=self.order_id_filter,
@@ -148,5 +148,5 @@ class OrderPreviewsBatch(FunPayObject):
         return self._other_filters
 
     @property
-    def type(self) -> OrderPreviewType:
+    def type(self) -> OrderType:
         return self._type

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Type, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Type, TypeVar
 from dataclasses import field, dataclass
-from itertools import chain
 from collections.abc import Callable
 
 from funpaybotengine.types import PrivateChatPreview, Message
@@ -11,7 +10,7 @@ from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
 from funpaybotengine.exceptions import UnauthorizedError, BotUnauthenticatedError
 from funpaybotengine.dispatching import RunnerEvent
-from funpaybotengine.types.enums import MessageType, OrderPreviewType
+from funpaybotengine.types.enums import MessageType, OrderType
 from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.storage.inmemory import InMemoryStorage
 from funpaybotengine.types.requests.runner import (
@@ -21,7 +20,7 @@ from funpaybotengine.types.requests.runner import (
 )
 from funpaybotengine.exceptions.session_exceptions import UnexpectedHTTPStatusError
 from funpaybotengine.dispatching.events import builtin_events as be
-
+from collections import defaultdict, ChainMap
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
@@ -75,7 +74,7 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
 @dataclass
 class MsgUpdate:
     event: be.NewMessage
-    related_type: Literal['sale', 'purchase', 'unknown'] | None = None
+    related_type: OrderType | None = None
 
     def __post_init__(self) -> None:
         meta = self.event.message.meta
@@ -88,11 +87,11 @@ class MsgUpdate:
 
         bot = self.event.get_bound_bot()
         if meta.buyer_id:
-            self.related_type = 'purchase' if meta.buyer_id == bot.userid else 'sale'
+            self.related_type = OrderType.PURCHASE if meta.buyer_id == bot.userid else OrderType.SALE
         elif meta.seller_id:
-            self.related_type = 'sale' if meta.seller_id == bot.userid else 'purchase'
+            self.related_type = OrderType.SALE if meta.seller_id == bot.userid else OrderType.PURCHASE
         else:
-            self.related_type = 'unknown'
+            self.related_type = OrderType.UNKNOWN
 
 
 @dataclass
@@ -117,13 +116,19 @@ class EventsPack:
         self.updates.append(ChatUpdate(event))
 
     def sales_related(self):
-        return (m for upd in self.updates for m in upd.messages if m.related_type == 'sale')
+        return (
+            m for upd in self.updates for m in upd.messages if m.related_type is OrderType.SALE
+        )
 
     def purchases_related(self):
-        return (m for upd in self.updates for m in upd.messages if m.related_type == 'purchase')
+        return (
+            m for upd in self.updates for m in upd.messages if m.related_type is OrderType.PURCHASE
+        )
 
     def unknown_related(self):
-        return (m for upd in self.updates for m in upd.messages if m.related_type == 'unknown')
+        return (
+            m for upd in self.updates for m in upd.messages if m.related_type is OrderType.UNKNOWN
+        )
 
     def flat(self) -> list[RunnerEvent]:
         result = []
@@ -261,56 +266,45 @@ class EventCollector:
                     continue
                 upd.add_message(be.NewMessage(object=m, tag=None).as_(self.bot))
 
-    async def resolve_order(self, upd: MsgUpdate, sales: dict[str, OrderPreview], purchases: dict[str, OrderPreview], discover: Literal['sale', 'purchase']) -> None:
-        if upd.event.object.meta.order_id in purchases:
-            upd.related_type = 'purchase'
-            return
-        if upd.event.object.meta.order_id in sales:
-            upd.related_type = 'sale'
-            return
+    async def resolve_order(self, upd: MsgUpdate, orders: dict[OrderType, dict[str, OrderPreview]], discover: OrderType) -> None:
+        if order_id := upd.event.object.meta.order_id is None:
+            raise ValueError()
 
-        order = await self.storage.get_order_preview(upd.event.message.meta.order_id or '')
-        if order and order.type is not OrderPreviewType.UNKNOWN:
-            upd.related_type = 'sale' if order.type is OrderPreviewType.SALE else 'purchase'
-            (sales if upd.related_type == 'sale' else purchases)[order.id] = order
-            return
+        if order_id in orders[OrderType.PURCHASE]:
+            upd.related_type = OrderType.PURCHASE
+        elif order_id in orders[OrderType.SALE]:
+            upd.related_type = OrderType.SALE
+        elif (order := (await self.storage.get_order_preview(order_id))) is not None:
+            upd.related_type = order.type
+            orders[upd.related_type][order_id] = order
 
-        order_preview = None
-        if discover == 'sale' and self.config.discover_sales:
-            order_preview = await self._get_sales(order_id=upd.event.object.meta.order_id)
-        elif discover == 'purchase' and self.config.discover_purchases:
-            order_preview = await self._get_purchases(order_id=upd.event.object.meta.order_id)
+        if upd.related_type is OrderType.UNKNOWN:
+            if discover == 'sale' and self.config.discover_sales:
+                order = await self._get_sales(order_id=upd.event.object.meta.order_id)
+            elif discover == 'purchase' and self.config.discover_purchases:
+                order = await self._get_purchases(order_id=upd.event.object.meta.order_id)
+            else:
+                return
 
-        if not order_preview:
-            return
-        order_preview = order_preview[0]
+            upd.related_type = discover
+            orders[discover][order_id] = order[0]
 
-        upd.related_type = discover
-        (sales if discover=='sale' else purchases)[order_preview.id] = order_preview
-
-    async def _make_order_events(self, pack: EventsPack, orders: dict[str, OrderPreview]) -> None:
-        for u in chain(pack.sales_related(), pack.purchases_related()):
-            cls = _ORDER_RELATED[u.event.object.meta.type][0 if u.related_type == 'sale' else 1]
-            e = cls(object=u.event.object, tag=u.event.tag).as_(self.bot)
-            e._order_preview = orders.get(u.event.object.meta.order_id or '')
-            u.event = e
+        cls = _ORDER_RELATED[upd.event.message.meta.type][0 if upd.related_type == 'sale' else 1]
+        e = cls(object=upd.event.object, tag=upd.event.tag).as_(self.bot)
+        e._order_preview = ChainMap(*orders.values()).get(order_id)
+        upd.event = e
 
     async def gen_order_events(self, pack: EventsPack) -> None:
-        sales, purchases = {}, {}
-        unknown = list(pack.unknown_related())
+        orders: dict[OrderType, dict[str, OrderPreview]] = defaultdict(dict)
 
-        if (list(pack.sales_related()) or unknown) and self.config.discover_sales:
-            sales = {i.id: i for i in await self._get_sales()}
-            for e in unknown:
-                await self.resolve_order(e, sales, purchases, 'sale')
-            unknown = list(pack.unknown_related())
+        if self.config.discover_sales:
+            orders[OrderType.SALE] = {i.id: i for i in await self._get_sales()}
 
-        if (list(pack.purchases_related()) or unknown) and self.config.discover_purchases:
-            purchases = {i.id: i for i in await self._get_purchases()}
-            for e in unknown:
-                await self.resolve_order(e, sales, purchases, 'purchase')
+        for upd in list(pack.sales_related()) + list(pack.unknown_related()):
+            await self.resolve_order(upd, orders, OrderType.SALE)
 
-        await self._make_order_events(pack, sales | purchases)
+        for upd in list(pack.purchases_related()) + list(pack.unknown_related()):
+            await self.resolve_order(upd, orders, OrderType.PURCHASE)
 
     async def get_events(self) -> list[RunnerEvent[Any]]:
         debug('Getting events...')
