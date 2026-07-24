@@ -29,17 +29,12 @@ if TYPE_CHECKING:
 
 
 class AioHttpSession(BaseSession):
-    def __init__(
-        self,
-        proxy: str | None = None,
-        default_headers: dict[str, str] | None = None,
-    ):
+    def __init__(self, proxy: str | None = None, headers: dict[str, str] | None = None) -> None:
         super().__init__()
 
         self._proxy = proxy
         self._default_headers = (
-            default_headers
-            if default_headers is not None
+            headers if headers is not None
             else {
                 USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) '
                 'Gecko/20100101 Firefox/140.0',
@@ -73,12 +68,7 @@ class AioHttpSession(BaseSession):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             await asyncio.sleep(0.25)
 
-    def prepare_cookies(
-        self,
-        session: ClientSession,
-        bot: Bot,
-        skip_session_cookies: bool = False,
-    ) -> None:
+    def prepare_cookies(self, session: ClientSession, bot: Bot, skip_session_cookies: bool = False) -> None:
         session.cookie_jar.update_cookies({'cookie_prefs': '1'})  # no 3rd-party cookies
 
         with suppress(BotNotInitializedError):

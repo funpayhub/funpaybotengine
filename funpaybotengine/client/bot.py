@@ -157,7 +157,7 @@ class Bot:
 
         self._storage = storage or InMemoryStorage()
         self._runner = Runner(self)
-        self._session = session or AioHttpSession(proxy=proxy, default_headers=default_headers)
+        self._session = session or AioHttpSession(proxy=proxy, headers=default_headers)
         self._session_updated_at = 0
 
         self._on_locale_mismatch_hook: LocaleMismatchHookProto = force_locale_hook
