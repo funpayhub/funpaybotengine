@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('Get2faStatus',)
+__all__ = ['Get2faStatus']
 
 from typing import TYPE_CHECKING
 

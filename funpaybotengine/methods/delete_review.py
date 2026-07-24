@@ -22,7 +22,7 @@ class DeleteReview(FunPayMethod[bool]):
     """
     url = 'orders/review'
     method = HTTPMethod.POST
-    data = lambda method, bot: {'orderId': method.order_id, 'authorId': bot.userid}
+    data = lambda m, bot: {'orderId': m.order_id, 'authorId': bot.userid}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
 
     order_id: str

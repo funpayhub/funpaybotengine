@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class CalcChips(FunPayMethod[CalcResult]):
     url = 'chips/calc'
     method = HTTPMethod.POST
-    data = lambda method, *args: {'game': method.game_id, 'price': method.price}
+    data = lambda m, *_: {'game': m.game_id, 'price': m.price}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     model_to_build = CalcResult
 

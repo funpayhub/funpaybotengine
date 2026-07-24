@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ['CalcLots', ]
+__all__ = ['CalcLots']
 
 import json
 from typing import TYPE_CHECKING, Any
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class CalcLots(FunPayMethod[CalcResult]):
     url = 'lots/calc'
     method = HTTPMethod.POST
-    data = lambda method, *args: {'nodeId': method.game_id, 'price': method.price}
+    data = lambda m, *_: {'nodeId': m.game_id, 'price': m.price}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     model_to_build = CalcResult
 

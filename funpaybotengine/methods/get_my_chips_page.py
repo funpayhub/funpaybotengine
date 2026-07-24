@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('GetMyChipsPage',)
+__all__ = ['GetMyChipsPage']
 
 from funpayparsers.parsers.page_parsers import MyChipsPageParser
 
@@ -16,16 +16,10 @@ class GetMyChipsPage(FunPayMethod[MyChipsPage]):
 
     Returns ``funpaybotengine.types.pages.MyChipsPage``.
     """
+    url = lambda m, *_: f'chips/{m.subcategory_id}/trade'
+    method = HTTPMethod.GET
+    parser_cls = MyChipsPageParser
+    model_to_build = MyChipsPage
 
     subcategory_id: int
     """Subcategory ID."""
-
-    __model_to_build__ = MyChipsPage
-
-    def __init__(self, subcategory_id: int):
-        super().__init__(
-            url=f'chips/{subcategory_id}/trade',
-            method=HTTPMethod.GET,
-            parser_cls=MyChipsPageParser,
-            subcategory_id=subcategory_id,
-        )

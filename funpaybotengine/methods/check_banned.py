@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('CheckBanned',)
+__all__ = ['CheckBanned']
 
 from typing import TYPE_CHECKING
 
