@@ -66,7 +66,7 @@ from funpaybotengine.methods import (
     GetTransactions,
     SaveOfferFields,
     SetOffersHidden,
-    MethodReturnType,
+    MethodR,
     GetSubcategoryPage,
     GetTransactionsPage,
     UpdateNoticeChannel,
@@ -868,11 +868,11 @@ class Bot:
 
     async def make_request(
         self,
-        method: FunPayMethod[MethodReturnType],
+        method: FunPayMethod[MethodR],
         skip_update: bool = False,
         skip_locale_check: bool = False,
         skip_session_cookies: bool = False,
-    ) -> Response[MethodReturnType]:
+    ) -> Response[MethodR]:
         if not method.allow_anonymous and self.anonymous:
             raise RuntimeError(
                 f"Method '{method.__class__.__name__}' cannot be executed anonymously.",

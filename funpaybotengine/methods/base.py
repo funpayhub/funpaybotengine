@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-
-__all__ = ('FunPayMethod', 'MethodReturnType')
+__all__ = ['FunPayMethod']
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
-from collections.abc import Callable, Awaitable
+from collections.abc import Callable, Awaitable, Sequence
 
-from pydantic import Field, BaseModel, ConfigDict
+from pydantic import Field, BaseModel, ConfigDict, TypeAdapter
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
 
 from funpaybotengine.types.enums import Language
@@ -23,7 +22,7 @@ if TYPE_CHECKING:
 
 
 R = TypeVar('R')
-MethodReturnType = TypeVar('MethodReturnType', bound=Any)
+MethodR = TypeVar('MethodR', bound=Any)
 
 if TYPE_CHECKING:
     CallableField = Callable[['FunPayMethod[Any]', Bot], R | Awaitable[R]]
@@ -31,18 +30,18 @@ else:
     CallableField = Callable[[Any, Any], R | Awaitable[R]]
 
 
-class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
+_MISSING = object()
+
+
+class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     """Base method class."""
 
-    model_config = ConfigDict(
-        validate_assignment=True,
-        arbitrary_types_allowed=True,
-    )
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    url: CallableField[str] | str
+    url: ClassVar[CallableField[str] | str]
     """Method URL."""
 
-    method: HTTPMethod
+    method: ClassVar[HTTPMethod]
     """
     HTTP Method.
     """
@@ -57,49 +56,49 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     Defaults to ``None``.
     """
 
-    ignore_locale: bool = False
+    ignore_locale: ClassVar[bool] = False
     """
     Whether to ignore locale or not.
-    
+
     If ``True``, ``FunPayMethod.locale`` will be ignored.
     """
 
-    headers: CallableField[dict[str, str]] | dict[str, str] = Field(default_factory=dict)
+    headers: ClassVar[CallableField[dict[str, str]] | dict[str, str]] = lambda *args: {}
     """
     Headers.
 
     Defaults to empty dict.
     """
 
-    data: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
+    data: ClassVar[CallableField[dict[str, Any]] | dict[str, Any]] = lambda *args: {}
     """
     Additional data.
 
     Defaults to empty dict.
     """
 
-    expected_status_codes: list[int | HTTPStatus] = [HTTPStatus.OK]
+    expected_status_codes: ClassVar[Sequence[int | HTTPStatus]] = (HTTPStatus.OK,)
     """
     List of expected status codes.
 
-    Defaults to ``[HTTPStatus.OK]``.
+    Defaults to ``(HTTPStatus.OK, )``.
     """
 
-    allow_anonymous: bool = False
+    allow_anonymous: ClassVar[bool] = False
     """
     Whether this method can be executed as anonymous user or not.
-    
+
     Defaults to ``False``.
     """
 
-    allow_uninitialized: bool = False
+    allow_uninitialized: ClassVar[bool] = False
     """
     Whether this method can be executed as uninitialized user or not.
-    
+
     Defaults to ``False``.
     """
 
-    parser_cls: Type[FunPayObjectParser] | None = None  # type: ignore[type-arg]
+    parser_cls: ClassVar[type[FunPayObjectParser] | None] = None  # type: ignore[type-arg]
     # unsupported by pydantic
     """
     Parser class (not an instance!) for parsing raw source.
@@ -107,7 +106,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     Defaults to ``None``.
     """
 
-    parser_options: ParsingOptions | None = None
+    parser_options: ClassVar[ParsingOptions | None] = None
     """
     Instance of parser options for ``FunPayMethod.parser_cls``.
 
@@ -124,16 +123,41 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     context: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
     """
     Additional context for building a final `funpaybotengine` object.
-    
+
     Defaults to empty dict.
     """
 
-    __model_to_build__: Type[MethodReturnType] | None = None
+    model_to_build: ClassVar[Type[MethodR] | None] = None
 
-    def model_post_init(self, context: Any, /) -> None:
-        super().model_post_init(context)
-        if self.parser_cls and self.parser_options is None:
-            self.parser_options = self.parser_cls.get_options_cls()()
+    @classmethod
+    def __pydantic_init_subclass__(cls, *args, **kwargs) -> None:
+        for k in cls.__class_vars__:
+            value = getattr(cls, k, _MISSING)
+            if value is _MISSING:
+                raise ValueError(f'{k} is not defined, but it is required!')
+
+            for klass in cls.__mro__:
+                if not issubclass(klass, BaseModel):
+                    continue
+
+                if k in klass.__annotations__:
+                    value_type = klass.__annotations__[k]
+                    break
+            else:
+                raise ValueError(f'Cannot find type annotation for {k}.')
+
+            if not value_type.__args__:
+                raise ValueError(f'ClassVar is empty for {k}.')
+
+            TypeAdapter(value_type.__args__[0], config=ConfigDict(arbitrary_types_allowed=True))\
+                .validate_python(value, strict=True)
+
+    def get_parser_options(self) -> ParsingOptions | None:
+        if self.parser_options is not None:
+            return self.parser_options
+        if self.parser_cls:
+            return self.parser_cls.get_options_cls()()
+        return None
 
     async def parse_result(self, response: RawResponse[Any]) -> Any:
         """
@@ -153,21 +177,17 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
         if self.parser_cls is None:
             return response.raw_response
 
-        return self.parser_cls(response.raw_response, options=self.parser_options).parse()
+        return self.parser_cls(response.raw_response, options=self.get_parser_options()).parse()
 
-    async def transform_result(
-        self,
-        parsing_result: Any,
-        response: RawResponse[Any],
-    ) -> MethodReturnType:
+    async def transform_result(self, parsing_result: Any, response: RawResponse[Any]) -> MethodR:
         """
         Transforms a raw response or parser output
         (i.e., the result of ``FunPayMethod.parse_result``)
         into a type expected by or compatible with funpaybotengine
-        (``MethodReturnType``).
+        (``MethodR``).
         """
-        if self.__model_to_build__ is not None and issubclass(self.__model_to_build__, BaseModel):
-            return self.__model_to_build__.model_validate(
+        if self.model_to_build is not None and issubclass(self.model_to_build, BaseModel):
+            return self.model_to_build.model_validate(
                 parsing_result,
                 context=await self.get_full_context(response),
             )
@@ -175,11 +195,11 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
         raise NotImplementedError(
             f"{self.__class__.__name__} must either define a BaseModel in '__model_to_build__' "
             f"or override 'transform_result'. "
-            f"Currently, '__model_to_build__' is {self.__model_to_build__}, and "
+            f"Currently, '__model_to_build__' is {self.model_to_build}, and "
             f"'transform_result' has not been overridden.",
         )
 
-    async def to_obj(self, response: RawResponse[Any]) -> MethodReturnType:
+    async def to_obj(self, response: RawResponse[Any]) -> MethodR:
         parsing_result = await self.parse_result(response)
         return await self.transform_result(parsing_result, response)
 
@@ -199,7 +219,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
 
         return self_context | context_from_response | context | {'bot': response.executed_as}
 
-    async def _resolve_callable_field_value(self, value: R | CallableField[R], bot: Bot) -> R:
+    async def _resolve_callable_field_value(self, value: CallableField[R] | R, bot: Bot) -> R:
         if not callable(value):
             return value
 
@@ -220,7 +240,7 @@ class FunPayMethod(BaseModel, Generic[MethodReturnType], ABC):
     async def get_context(self, bot: Bot) -> dict[str, Any]:
         return await self._resolve_callable_field_value(self.context, bot)
 
-    async def execute(self, as_: Bot) -> Response[MethodReturnType]:
+    async def execute(self, as_: Bot) -> Response[MethodR]:
         """
         Execute method as bot and return result.
 

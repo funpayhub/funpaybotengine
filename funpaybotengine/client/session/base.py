@@ -22,7 +22,7 @@ from funpaybotengine.exceptions import (
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
-    from funpaybotengine.methods.base import FunPayMethod, MethodReturnType
+    from funpaybotengine.methods.base import FunPayMethod, MethodR
 
 
 _exceptions: dict[int, Any] = {
@@ -82,11 +82,11 @@ class BaseSession(ABC):
     @abstractmethod
     async def make_request(
         self,
-        method: FunPayMethod[MethodReturnType],
+        method: FunPayMethod[MethodR],
         bot: Bot,
         timeout: float | None = None,
         skip_session_cookies: bool = False,
-    ) -> Response[MethodReturnType]: ...
+    ) -> Response[MethodR]: ...
 
     def check_status_code(self, method: FunPayMethod[Any], status_code: int | HTTPStatus) -> None:
         """

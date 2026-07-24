@@ -25,7 +25,7 @@ from funpaybotengine.exceptions.session_exceptions import BannedError
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
-    from funpaybotengine.methods.base import FunPayMethod, MethodReturnType
+    from funpaybotengine.methods.base import FunPayMethod, MethodR
 
 
 class AioHttpSession(BaseSession):
@@ -95,11 +95,11 @@ class AioHttpSession(BaseSession):
 
     async def make_request(
         self,
-        method: FunPayMethod[MethodReturnType],
+        method: FunPayMethod[MethodR],
         bot: Bot,
         timeout: float | None = None,
         skip_session_cookies: bool = False,
-    ) -> Response[MethodReturnType]:
+    ) -> Response[MethodR]:
         session = await self.session()
 
         self.prepare_cookies(session, bot, skip_session_cookies=skip_session_cookies)
