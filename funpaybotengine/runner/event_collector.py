@@ -242,7 +242,7 @@ class EventCollector:
         debug('Changed chats: %r.', ', '.join(str(i.id) for i in result.updates))
         return result
 
-    async def get_new_message_events(self, pack: EventsPack) -> None:
+    async def get_new_message_events(self, pack: EventsPack) -> EventsPack:
         ids = [i.event.object.id for i in pack.updates]
         debug('Getting new messages for chats %s', ', '.join(str(i) for i in ids))
         chat_histories = await self.get_chat_histories(ids)
@@ -265,9 +265,10 @@ class EventCollector:
                 else:
                     continue
                 upd.add_message(be.NewMessage(object=m, tag=None).as_(self.bot))
+        return pack
 
     async def resolve_order(self, upd: MsgUpdate, orders: dict[OrderType, dict[str, OrderPreview]], discover: OrderType) -> None:
-        if order_id := upd.event.object.meta.order_id is None:
+        if (order_id := upd.event.object.meta.order_id) is None:
             raise ValueError()
 
         if order_id in orders[OrderType.PURCHASE]:
@@ -279,9 +280,9 @@ class EventCollector:
             orders[upd.related_type][order_id] = order
 
         if upd.related_type is OrderType.UNKNOWN:
-            if discover == 'sale' and self.config.discover_sales:
+            if discover is OrderType.SALE and self.config.discover_sales:
                 order = await self._get_sales(order_id=upd.event.object.meta.order_id)
-            elif discover == 'purchase' and self.config.discover_purchases:
+            elif discover is OrderType.PURCHASE and self.config.discover_purchases:
                 order = await self._get_purchases(order_id=upd.event.object.meta.order_id)
             else:
                 return
@@ -289,12 +290,12 @@ class EventCollector:
             upd.related_type = discover
             orders[discover][order_id] = order[0]
 
-        cls = _ORDER_RELATED[upd.event.message.meta.type][0 if upd.related_type == 'sale' else 1]
+        cls = _ORDER_RELATED[upd.event.message.meta.type][0 if upd.related_type is OrderType.SALE else 1]
         e = cls(object=upd.event.object, tag=upd.event.tag).as_(self.bot)
         e._order_preview = ChainMap(*orders.values()).get(order_id)
         upd.event = e
 
-    async def gen_order_events(self, pack: EventsPack) -> None:
+    async def gen_order_events(self, pack: EventsPack) -> EventsPack:
         orders: dict[OrderType, dict[str, OrderPreview]] = defaultdict(dict)
 
         if self.config.discover_sales:
@@ -306,6 +307,8 @@ class EventCollector:
         for upd in list(pack.purchases_related()) + list(pack.unknown_related()):
             await self.resolve_order(upd, orders, OrderType.PURCHASE)
 
+        return pack
+
     async def get_events(self) -> list[RunnerEvent[Any]]:
         debug('Getting events...')
 
@@ -313,15 +316,15 @@ class EventCollector:
         if not r:
             return []
 
-        await self.get_new_message_events(r)
-        await self.gen_order_events(r)
+        r = await self.get_new_message_events(r)
+        r = await self.gen_order_events(r)
+        result = r.flat()
 
         await self.session_storage.save_chat_previews(*(i.event.chat_preview for i in r.updates))
         await self.storage.save_order_previews(*(
-            msg.event._order_preview
-            for chat in r.updates
-            for msg in chat.messages
-            if isinstance(msg.event, be.OrderEvent) and msg.event._order_preview is not None
+            e._order_preview
+            for e in result
+            if isinstance(e, be.OrderEvent) and e._order_preview is not None
         ))
 
         self.chats_upd_ts = r.timestamp
