@@ -1,29 +1,21 @@
 from __future__ import annotations
 
 
-__all__ = ('GetTransactionsPage',)
+__all__ = ['GetTransactionsPage']
 
 
-from pydantic import BaseModel
 from funpayparsers.parsers.page_parsers import TransactionsPageParser
 
-from funpaybotengine.types.enums import Language
 from funpaybotengine.types.pages import TransactionsPage
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
 
 
-class GetTransactionsPage(FunPayMethod[TransactionsPage], BaseModel):
+class GetTransactionsPage(FunPayMethod[TransactionsPage]):
     """Get the transactions page (``https://funpay.com/account/balance``)."""
 
-    __model_to_build__ = TransactionsPage
+    url = 'account/balance'
+    method = HTTPMethod.GET
+    parser_cls = TransactionsPageParser
+    model_to_build = TransactionsPage
 
-    def __init__(self, locale: Language | None = None):
-        super().__init__(
-            url='account/balance',
-            method=HTTPMethod.GET,
-            locale=locale,
-            parser_cls=TransactionsPageParser,
-            allow_anonymous=False,
-            allow_uninitialized=True,
-        )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('GetSettingPage',)
+__all__ = ['GetSettingPage']
 
 
 from funpayparsers.parsers.page_parsers import SettingsPageParser
@@ -15,14 +15,8 @@ class GetSettingPage(FunPayMethod[SettingsPage]):
     """
     Get user settings page (``https://funpay.com/account/settings``).
     """
-
-    __model_to_build__ = SettingsPage
-
-    def __init__(self) -> None:
-        super().__init__(
-            url='account/settings',
-            method=HTTPMethod.GET,
-            parser_cls=SettingsPageParser,
-            allow_anonymous=False,
-            allow_uninitialized=True,
-        )
+    url = 'account/settings'
+    method = HTTPMethod.GET
+    allow_uninitialized = True
+    parser_cls = SettingsPageParser
+    model_to_build = SettingsPage

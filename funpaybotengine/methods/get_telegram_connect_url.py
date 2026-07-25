@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('GetTelegramConnectURL',)
+__all__ = ['GetTelegramConnectURL']
 
 
 from typing import TYPE_CHECKING, Any
@@ -18,14 +18,9 @@ class GetTelegramConnectURL(FunPayMethod[str]):
     """
     Get telegram connect url via @funpaysmartbot (``https://funpay.com/account/linkTelegram``).
     """
-
-    def __init__(self) -> None:
-        super().__init__(
-            url='account/linkTelegram',
-            method=HTTPMethod.GET,
-            allow_anonymous=False,
-            allow_uninitialized=True,
-        )
+    url = 'account/linkTelegram'
+    method = HTTPMethod.GET
+    allow_uninitialized = True
 
     async def parse_result(self, response: RawResponse[Any]) -> str:
         return response.url

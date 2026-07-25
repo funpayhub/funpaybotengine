@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('MuteChat',)
+__all__ = ['MuteChat']
 
 from typing import TYPE_CHECKING, Any
 
@@ -14,25 +14,13 @@ if TYPE_CHECKING:
 
 
 class MuteChat(FunPayMethod[bool]):
+    url = 'chat/mute'
+    method = HTTPMethod.POST
+    data = lambda m, *_: {'node_id': m.chat_id, 'mute': int(m.mute)}
+    headers = {'X-Requested-With': 'XMLHttpRequest'}
+
     chat_id: int
     mute: bool
-
-    def __init__(
-        self,
-        chat_id: int,
-        mute: bool,
-    ) -> None:
-        super().__init__(
-            url='chat/mute',
-            method=HTTPMethod.POST,
-            expected_status_codes=[200],
-            headers={'X-Requested-With': 'XMLHttpRequest'},
-            data={'node_id': chat_id, 'mute': int(mute)},
-            allow_anonymous=False,
-            allow_uninitialized=False,
-            chat_id=chat_id,
-            mute=mute,
-        )
 
     async def parse_result(self, response: RawResponse[bool]) -> bool:
         return True
