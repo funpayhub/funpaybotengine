@@ -25,6 +25,7 @@ class GetOfferFields(FunPayMethod[OfferFields]):
 
     Returns ``funpaybotengine.types.pages.OrderPage`` obj.
     """
+
     url = lambda m, *_: \
         'logs/offerEdit' if m.subcategory_type is SubcategoryType.OFFERS else f'chips/{m.subcategory_id}/trade'
     method = HTTPMethod.GET

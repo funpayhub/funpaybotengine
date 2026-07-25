@@ -17,6 +17,7 @@ class GetOrderPage(FunPayMethod[OrderPage]):
 
     Returns ``funpaybotengine.types.pages.OrderPage`` obj.
     """
+
     url = lambda m, *_: f'orders/{m.order_id}/'
     method = HTTPMethod.GET
     parser_cls = OrderPageParser

@@ -51,6 +51,7 @@ class GetPurchases(FunPayMethod[OrderPreviewsBatch]):
 
     Returns ``funpaybotengine.types.OrderPreviewsBatch`` obj.
     """
+
     url = _construct_url
     method = HTTPMethod.POST
     data = lambda m, *_: {'continue': m.from_order_id} if m.from_order_id is not None else {}

@@ -15,6 +15,7 @@ class GetReviews(FunPayMethod[ReviewsBatch]):
 
     Returns ``funpaybotengine.types.OrderPreviewsBatch`` obj.
     """
+
     url = 'users/reviews'
     method = HTTPMethod.POST
     data = lambda m, *_: {'user_id': m.user_id, 'continue': m.from_review_id, 'filter': m.filter}

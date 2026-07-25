@@ -20,6 +20,7 @@ class SetOffersHidden(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'trade/tradeLockSettings'
     method = HTTPMethod.POST
     data = lambda m, bot: {'userId': bot.userid, 'mode': int(m.hidden)}

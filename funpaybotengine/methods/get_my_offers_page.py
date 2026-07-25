@@ -16,6 +16,7 @@ class GetMyOffersPage(FunPayMethod[MyOffersPage]):
 
     Returns ``funpaybotengine.types.pages.MyOffersPage``.
     """
+
     url = lambda m, *_: f'lots/{m.subcategory_id}/trade'
     method = HTTPMethod.GET
     parser_class = MyOffersPageParser

@@ -15,6 +15,7 @@ class GetSettingPage(FunPayMethod[SettingsPage]):
     """
     Get user settings page (``https://funpay.com/account/settings``).
     """
+
     url = 'account/settings'
     method = HTTPMethod.GET
     allow_uninitialized = True

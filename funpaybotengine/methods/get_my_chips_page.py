@@ -16,6 +16,7 @@ class GetMyChipsPage(FunPayMethod[MyChipsPage]):
 
     Returns ``funpaybotengine.types.pages.MyChipsPage``.
     """
+
     url = lambda m, *_: f'chips/{m.subcategory_id}/trade'
     method = HTTPMethod.GET
     parser_cls = MyChipsPageParser

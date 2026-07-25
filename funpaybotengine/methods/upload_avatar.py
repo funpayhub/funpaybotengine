@@ -19,6 +19,7 @@ class UploadAvatar(FunPayMethod[bool]):
     """
     Uploads new user avatar (``https://funpay.com/avatar``).
     """
+
     url = 'file/avatar'
     method = HTTPMethod.POST
     data = lambda m, *_: {'file': m.file}

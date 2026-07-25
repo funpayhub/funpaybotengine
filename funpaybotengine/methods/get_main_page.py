@@ -18,6 +18,7 @@ class GetMainPage(FunPayMethod[MainPage]):
 
     Returns ``funpaybotengine.types.pages.MainPage`` obj.
     """
+
     url = ''
     method = HTTPMethod.GET
     data = lambda m, *_: {'setlocale': m.change_locale.appdata_alias} if m.change_locale else {}

@@ -30,6 +30,7 @@ class Review(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'orders/review'
     method = HTTPMethod.POST
     data = make_data

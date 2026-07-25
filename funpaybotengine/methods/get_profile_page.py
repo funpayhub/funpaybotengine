@@ -17,6 +17,7 @@ class GetProfilePage(FunPayMethod[ProfilePage]):
 
     Returns ``funpaybotengine.types.pages.ProfilePage`` obj.
     """
+
     url = lambda m, *_: f'users/{m.user_id}/'
     method = HTTPMethod.GET
     allow_anonymous = True

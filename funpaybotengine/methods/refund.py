@@ -22,6 +22,7 @@ class Refund(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'orders/refund'
     method = HTTPMethod.POST
     data = lambda m, *_: {'id': m.order_id}

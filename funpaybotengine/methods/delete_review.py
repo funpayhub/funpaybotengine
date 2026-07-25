@@ -20,6 +20,7 @@ class DeleteReview(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'orders/review'
     method = HTTPMethod.POST
     data = lambda m, bot: {'orderId': m.order_id, 'authorId': bot.userid}

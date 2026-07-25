@@ -31,6 +31,7 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch]):
 
     Returns ``funpaybotengine.types.pages.MainPage`` obj.
     """
+
     url = 'users/transactions'
     method = HTTPMethod.POST
     data = make_data

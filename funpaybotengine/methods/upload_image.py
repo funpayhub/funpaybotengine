@@ -22,6 +22,7 @@ class UploadImage(FunPayMethod[int]):
 
     Returns image ID (``int``).
     """
+
     url = 'file/addChatImage'
     method = HTTPMethod.POST
     data = lambda m, *_: {'file': m.file}

@@ -18,6 +18,7 @@ class GetSubcategoryPage(FunPayMethod[SubcategoryPage]):
 
     Returns ``funpaybotengine.types.pages.SubcategoryPage`` obj.
     """
+
     url = lambda m, *_: f'{m.type.url_alias}/{m.subcategory_id}'
     method = HTTPMethod.GET
     allow_anonymous = True

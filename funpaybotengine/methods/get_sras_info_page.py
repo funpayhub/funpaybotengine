@@ -18,6 +18,7 @@ class GetSrasInfoPage(FunPayMethod[SrasInfoPage]):
     Returns seller rating restrictions per subcategory.
     Returns ``funpaybotengine.types.pages.SrasInfoPage``.
     """
+
     url = 'sras/info'
     method = HTTPMethod.GET
     parser_cls = SrasInfoPageParser

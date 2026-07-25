@@ -18,6 +18,7 @@ class GetTelegramConnectURL(FunPayMethod[str]):
     """
     Get telegram connect url via @funpaysmartbot (``https://funpay.com/account/linkTelegram``).
     """
+
     url = 'account/linkTelegram'
     method = HTTPMethod.GET
     allow_uninitialized = True

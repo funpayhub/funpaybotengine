@@ -21,6 +21,7 @@ class UpdateNoticeChannel(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'account/noticeChannel'
     method = HTTPMethod.POST
     data = lambda m, *_: {'channel': m.value, 'active': int(m.enabled)}

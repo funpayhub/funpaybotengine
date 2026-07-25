@@ -21,6 +21,7 @@ class Logout(FunPayMethod[bool]):
 
     Returns ``True``.
     """
+
     url = 'account/logout'
     method = HTTPMethod.GET
     data = lambda m, *_: {'token': m.logout_token}

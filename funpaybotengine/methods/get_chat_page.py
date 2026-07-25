@@ -17,6 +17,7 @@ class GetChatPage(FunPayMethod[ChatPage]):
 
     Returns max. 50 messages before ``before_message_id``.
     """
+
     url = 'chat/'
     method = HTTPMethod.GET
     data = lambda m, *_: {'node': str(m.chat_id)}
