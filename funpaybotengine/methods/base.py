@@ -3,7 +3,7 @@ from __future__ import annotations
 __all__ = ['FunPayMethod']
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar, get_args, get_type_hints
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
@@ -120,37 +120,14 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     Defaults to ``10.0``.
     """
 
-    context: CallableField[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
+    context: ClassVar[CallableField[dict[str, Any]] | dict[str, Any] | None] = None
     """
     Additional context for building a final `funpaybotengine` object.
 
     Defaults to empty dict.
     """
 
-    model_to_build: ClassVar[Type[MethodR] | None] = None
-
-    @classmethod
-    def __pydantic_init_subclass__(cls, *args, **kwargs) -> None:
-        for k in cls.__class_vars__:
-            value = getattr(cls, k, _MISSING)
-            if value is _MISSING:
-                raise ValueError(f'{k} is not defined, but it is required!')
-
-            for klass in cls.__mro__:
-                if not issubclass(klass, BaseModel):
-                    continue
-
-                if k in klass.__annotations__:
-                    value_type = klass.__annotations__[k]
-                    break
-            else:
-                raise ValueError(f'Cannot find type annotation for {k}.')
-
-            if not value_type.__args__:
-                raise ValueError(f'ClassVar is empty for {k}.')
-
-            TypeAdapter(value_type.__args__[0], config=ConfigDict(arbitrary_types_allowed=True))\
-                .validate_python(value, strict=True)
+    model_to_build: ClassVar[Type | None] = None
 
     def get_parser_options(self) -> ParsingOptions | None:
         if self.parser_options is not None:
@@ -193,9 +170,9 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
             )
 
         raise NotImplementedError(
-            f"{self.__class__.__name__} must either define a BaseModel in '__model_to_build__' "
+            f"{self.__class__.__name__} must either define a BaseModel in 'model_to_build' "
             f"or override 'transform_result'. "
-            f"Currently, '__model_to_build__' is {self.model_to_build}, and "
+            f"Currently, 'model_to_build' is {self.model_to_build}, and "
             f"'transform_result' has not been overridden.",
         )
 
@@ -223,10 +200,8 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
         if not callable(value):
             return value
 
-        result = value(self, bot)
-        if inspect.isawaitable(result):
-            return await result
-        return result
+        result = value(bot) if inspect.ismethod(value) else value(self, bot)
+        return (await result) if inspect.iscoroutine(result) else result
 
     async def get_url(self, bot: Bot) -> str:
         return await self._resolve_callable_field_value(self.url, bot)
@@ -238,6 +213,8 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
         return await self._resolve_callable_field_value(self.data, bot)
 
     async def get_context(self, bot: Bot) -> dict[str, Any]:
+        if self.context is None:
+            return {}
         return await self._resolve_callable_field_value(self.context, bot)
 
     async def execute(self, as_: Bot) -> Response[MethodR]:

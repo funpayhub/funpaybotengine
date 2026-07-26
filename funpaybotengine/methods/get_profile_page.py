@@ -23,9 +23,8 @@ class GetProfilePage(FunPayMethod[ProfilePage]):
     allow_anonymous = True
     allow_uninitialized = True
     parser_cls = ProfilePageParser
-    model_class = ProfilePage
+    model_to_build = ProfilePage
 
     user_id: int
     """User ID."""
 
-    __model_to_build__ = ProfilePage

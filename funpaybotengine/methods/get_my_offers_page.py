@@ -19,8 +19,8 @@ class GetMyOffersPage(FunPayMethod[MyOffersPage]):
 
     url = lambda m, *_: f'lots/{m.subcategory_id}/trade'
     method = HTTPMethod.GET
-    parser_class = MyOffersPageParser
-    model_to_build_class = MyOffersPage
+    parser_cls = MyOffersPageParser
+    model_to_build = MyOffersPage
 
     subcategory_id: int
     """Subcategory ID."""

@@ -21,7 +21,7 @@ class GetOrderPage(FunPayMethod[OrderPage]):
     url = lambda m, *_: f'orders/{m.order_id}/'
     method = HTTPMethod.GET
     parser_cls = OrderPageParser
-    model_to_build__ = OrderPage
+    model_to_build = OrderPage
 
     order_id: str
     """Order ID."""
