@@ -25,7 +25,7 @@ from .get_offer_fields import GetOfferFields as GetOfferFields
 from .get_profile_page import GetProfilePage as GetProfilePage
 from .get_transactions import GetTransactions as GetTransactions
 from .get_my_chips_page import GetMyChipsPage as GetMyChipsPage
-from .get_settings_page import GetSettingPage as GetSettingsPage
+from .get_settings_page import GetSettingsPage as GetSettingsPage
 from .save_offer_fields import SaveOfferFields as SaveOfferFields
 from .set_offers_hidden import SetOffersHidden as SetOffersHidden
 from .get_my_offers_page import GetMyOffersPage as GetMyOffersPage

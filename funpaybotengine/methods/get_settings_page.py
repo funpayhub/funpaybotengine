@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ['GetSettingPage']
+__all__ = ['GetSettingsPage']
 
 
 from funpayparsers.parsers.page_parsers import SettingsPageParser
@@ -11,7 +11,7 @@ from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session import HTTPMethod
 
 
-class GetSettingPage(FunPayMethod[SettingsPage]):
+class GetSettingsPage(FunPayMethod[SettingsPage]):
     """
     Get user settings page (``https://funpay.com/account/settings``).
     """

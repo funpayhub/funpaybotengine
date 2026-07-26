@@ -60,13 +60,12 @@ from funpaybotengine.methods import (
     GetMyChipsPage,
     GetOfferFields,
     GetProfilePage,
-    GetSettingPage,
+    GetSettingsPage,
     GetMyOffersPage,
     GetSrasInfoPage,
     GetTransactions,
     SaveOfferFields,
     SetOffersHidden,
-    MethodR,
     GetSubcategoryPage,
     GetTransactionsPage,
     UpdateNoticeChannel,
@@ -129,6 +128,9 @@ class LocaleMismatchHookProto(Protocol):
         __response: Response[R],
     ) -> Response[R]:
         pass
+
+
+R = TypeVar('R')
 
 
 class Bot:
@@ -795,7 +797,7 @@ class Bot:
     ) -> TransactionPreviewsBatch:
         return (
             await GetTransactions(
-                filter=filter,
+                filter=TransactionFilter(filter),
                 from_transaction_id=from_transaction_id,
             ).execute(self)
         ).response_obj
@@ -852,7 +854,7 @@ class Bot:
         return (await GetSrasInfoPage().execute(self)).response_obj
 
     async def get_settings_page(self) -> SettingsPage:
-        return (await GetSettingPage().execute(self)).response_obj
+        return (await GetSettingsPage().execute(self)).response_obj
 
     async def get_transactions_page(self) -> TransactionsPage:
         return (await GetTransactionsPage().execute(self)).response_obj
@@ -868,11 +870,11 @@ class Bot:
 
     async def make_request(
         self,
-        method: FunPayMethod[MethodR],
+        method: FunPayMethod[R],
         skip_update: bool = False,
         skip_locale_check: bool = False,
         skip_session_cookies: bool = False,
-    ) -> Response[MethodR]:
+    ) -> Response[R]:
         if not method.allow_anonymous and self.anonymous:
             raise RuntimeError(
                 f"Method '{method.__class__.__name__}' cannot be executed anonymously.",
