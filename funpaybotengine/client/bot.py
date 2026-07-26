@@ -166,9 +166,8 @@ class Bot:
         self.update_categories: bool = update_categories
 
         self._messages_lock = Lock()
-        self._listening_lock = Lock()
-        self._stopping_lock = Lock()
 
+        self._listening_lock = Lock()
         self._stop_event = Event()
         self._stopped_event = Event()
         self._stopped_event.set()
@@ -980,30 +979,41 @@ class Bot:
             self._stop_event.clear()
             self._stopped_event.clear()
 
-            tasks = [
-                asyncio.create_task(
-                    self._listen_events(
-                        dp,
-                        config=config,
-                        session_storage=session_storage,
-                        context_injection=workflow_injection,
-                    ),
-                ),
-                asyncio.create_task(self._stop_event.wait()),
-            ]
+            listener_task = asyncio.create_task(
+                self._listen_events(
+                    dp,
+                    config=config,
+                    session_storage=session_storage,
+                    context_injection=workflow_injection,
+                )
+            )
+            stop_task = asyncio.create_task(self._stop_event.wait())
 
-            _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
+            try:
+                done, pending = await asyncio.wait(
+                    [listener_task, stop_task], return_when=asyncio.FIRST_COMPLETED
+                )
+
+                # Если таска прослушивания событий упала - райзим исключение наверх.
+                if listener_task in done:
+                    await listener_task
+                    return
+
+                listener_task.cancel()
                 with suppress(asyncio.CancelledError):
-                    task.cancel()
-            self._stopped_event.set()
+                    await listener_task
+
+            finally:
+                for task in (listener_task, stop_task):
+                    if not task.done():
+                        task.cancel()
+
+                await asyncio.gather(listener_task, stop_task, return_exceptions=True)
+                self._stopped_event.set()
 
     async def stop_listening(self) -> None:
         if self._stopped_event.is_set():
             return
-        if self._stopping_lock.locked():
-            raise RuntimeError('Listening stopping already in progress.')
 
-        async with self._stopping_lock:
-            self._stop_event.set()
-            await self._stopped_event.wait()
+        self._stop_event.set()
+        await self._stopped_event.wait()
