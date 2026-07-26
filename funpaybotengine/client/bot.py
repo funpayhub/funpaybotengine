@@ -60,8 +60,8 @@ from funpaybotengine.methods import (
     GetMyChipsPage,
     GetOfferFields,
     GetProfilePage,
-    GetSettingsPage,
     GetMyOffersPage,
+    GetSettingsPage,
     GetSrasInfoPage,
     GetTransactions,
     SaveOfferFields,
@@ -604,7 +604,8 @@ class Bot:
 
         :param args: Tuple of (chat_id, after_message_id)
 
-        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects, sorted from oldest to newest.
+        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects,
+        sorted from oldest to newest.
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
@@ -973,7 +974,7 @@ class Bot:
         workflow_injection: dict[str, Any] | None = None,
     ) -> None:
         if self._listening_lock.locked():
-            raise RuntimeError('Already listening')
+            raise RuntimeError('Already listening.')
 
         async with self._listening_lock:
             self._stop_event.clear()
@@ -999,7 +1000,7 @@ class Bot:
 
     async def stop_listening(self) -> None:
         if self._stopped_event.is_set():
-            raise RuntimeError('Listening is already stopped.')
+            return
         if self._stopping_lock.locked():
             raise RuntimeError('Listening stopping already in progress.')
 

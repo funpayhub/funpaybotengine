@@ -102,7 +102,9 @@ class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
 
 
 class BotUnauthenticatedEvent(BotEngineEvent[float], event_name='unauthorized'):
-    delay: float
+    @property
+    def delay(self) -> float:
+        return self.object
 
     def context_injection(self) -> dict[str, Any]:
         return super().context_injection() | {'delay': self.delay}

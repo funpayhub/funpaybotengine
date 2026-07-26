@@ -49,7 +49,7 @@ class Runner:
         bot: Bot,
         *,
         config: RunnerConfig | None = None,
-        session_storage: Storage | None = None
+        session_storage: Storage | None = None,
     ) -> None:
         self._bot = bot
         self._config = config
@@ -72,7 +72,13 @@ class Runner:
         config: RunnerConfig | None = None,
         session_storage: Storage | None = None,
     ) -> AsyncGenerator[tuple[RunnerEvent[Any] | BotEngineEvent[Any], EventsPack], None]:
-        config = config if config is not None else self.config if self.config is not None else RunnerConfig()
+        config = (
+            config
+            if config is not None
+            else self.config
+            if self.config is not None
+            else RunnerConfig()
+        )
         storage = session_storage if session_storage is not None else self._session_storage
         collector = EventCollector(self.bot, config, session_storage=storage)
         backoff = Backoff(config.backoff_config)
@@ -81,7 +87,7 @@ class Runner:
 
         while True:
             sleep_time: float | None = None
-            start = time.time()
+            start = time.monotonic()
             pack = EventsPack([])
 
             try:
@@ -103,13 +109,14 @@ class Runner:
                     sleep_time = next(backoff)
                     logger.warning('Current attempt: %d. Delay: %f.', backoff.counter, sleep_time)
                     if backoff.counter == 1 and config.on_unauthenticated_error_policy == 'event':
-                        pack.events = [BotUnauthenticatedEvent(object=None, delay=sleep_time)]
+                        pack.events = [BotUnauthenticatedEvent(object=sleep_time)]
 
                 elif config.on_unauthenticated_error_policy == 'stop':
                     return
             except Exception:
                 sleep_time = next(backoff)
-                logger.error('Failed to collect events. Current attempt: %d. Delay: %f.',
+                logger.error(
+                    'Failed to collect events. Current attempt: %d. Delay: %f.',
                     backoff.counter,
                     sleep_time,
                     exc_info=True,
@@ -125,6 +132,6 @@ class Runner:
 
 
 async def _sleep(start_time: int | float, interval: int | float) -> None:
-    time_to_sleep = interval - (time.time() - start_time)
+    time_to_sleep = interval - (time.monotonic() - start_time)
     if time_to_sleep > 0:
         await asyncio.sleep(time_to_sleep)

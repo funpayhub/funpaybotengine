@@ -3,24 +3,25 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any, Type, TypeVar
 from dataclasses import field, dataclass
+from collections import ChainMap, defaultdict
 from collections.abc import Callable
 
-from funpaybotengine.types import PrivateChatPreview, Message
+from funpaybotengine.types import Message, PrivateChatPreview
 from funpaybotengine.utils import random_runner_tag
 from funpaybotengine.loggers import runner_logger as logger
 from funpaybotengine.exceptions import UnauthorizedError, BotUnauthenticatedError
 from funpaybotengine.dispatching import RunnerEvent
-from funpaybotengine.types.enums import MessageType, OrderType
+from funpaybotengine.types.enums import OrderType, MessageType
 from funpaybotengine.runner.config import RunnerConfig
 from funpaybotengine.storage.inmemory import InMemoryStorage
+from funpaybotengine.dispatching.events import builtin_events as be
 from funpaybotengine.types.requests.runner import (
     NodeRequestObject,
     ChatBookmarksRequestObject,
     OrdersCountersRequestObject,
 )
 from funpaybotengine.exceptions.session_exceptions import UnexpectedHTTPStatusError
-from funpaybotengine.dispatching.events import builtin_events as be
-from collections import defaultdict, ChainMap
+
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
@@ -67,7 +68,9 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
                 except UnexpectedHTTPStatusError:
                     if not attempts:
                         raise
+
         return inner
+
     return decorator
 
 
@@ -82,14 +85,20 @@ class MsgUpdate:
             return
 
         if meta.type in _REVIEW_RELATED:
-            self.event = _REVIEW_RELATED[meta.type](object=self.event.message, tag=self.event.tag)
+            self.event = _REVIEW_RELATED[meta.type](
+                object=self.event.message, tag=self.event.tag
+            ).as_(self.event.bot)
             return
 
         bot = self.event.get_bound_bot()
         if meta.buyer_id:
-            self.related_type = OrderType.PURCHASE if meta.buyer_id == bot.userid else OrderType.SALE
+            self.related_type = (
+                OrderType.PURCHASE if meta.buyer_id == bot.userid else OrderType.SALE
+            )
         elif meta.seller_id:
-            self.related_type = OrderType.SALE if meta.seller_id == bot.userid else OrderType.PURCHASE
+            self.related_type = (
+                OrderType.SALE if meta.seller_id == bot.userid else OrderType.PURCHASE
+            )
         else:
             self.related_type = OrderType.UNKNOWN
 
@@ -139,14 +148,15 @@ class EventsPack:
         return result
 
 
-
 class EventCollector:
     """
     Collects updates from FunPay and transforms them into update objects
     compatible with funpaybotengine.
     """
 
-    def __init__(self, bot: Bot, config: RunnerConfig, *, session_storage: Storage | None = None) -> None:
+    def __init__(
+        self, bot: Bot, config: RunnerConfig, *, session_storage: Storage | None = None
+    ) -> None:
         self.bot = bot
         self.config = config
         self.chats_upd_ts: int | float = time.time()
@@ -158,7 +168,7 @@ class EventCollector:
     async def _get_chat_bookmarks(self) -> RunnerResponse:
         async with self.bot._messages_lock:
             result = await self.bot.runner_request(
-                objects_to_request=[ ChatBookmarksRequestObject(), OrdersCountersRequestObject()],
+                objects_to_request=[ChatBookmarksRequestObject(), OrdersCountersRequestObject()],
             )
             if not result.orders_counters or not result.orders_counters.data:
                 raise BotUnauthenticatedError()
@@ -267,7 +277,9 @@ class EventCollector:
                 upd.add_message(be.NewMessage(object=m, tag=None).as_(self.bot))
         return pack
 
-    async def resolve_order(self, upd: MsgUpdate, orders: dict[OrderType, dict[str, OrderPreview]], discover: OrderType) -> None:
+    async def resolve_order(
+        self, upd: MsgUpdate, orders: dict[OrderType, dict[str, OrderPreview]], discover: OrderType
+    ) -> None:
         if (order_id := upd.event.object.meta.order_id) is None:
             raise ValueError()
 
@@ -287,10 +299,15 @@ class EventCollector:
             else:
                 return
 
+            if not order:
+                return
+
             upd.related_type = discover
             orders[discover][order_id] = order[0]
 
-        cls = _ORDER_RELATED[upd.event.message.meta.type][0 if upd.related_type is OrderType.SALE else 1]
+        cls = _ORDER_RELATED[upd.event.message.meta.type][
+            0 if upd.related_type is OrderType.SALE else 1
+        ]
         e = cls(object=upd.event.object, tag=upd.event.tag).as_(self.bot)
         e._order_preview = ChainMap(*orders.values()).get(order_id)
         upd.event = e
@@ -321,11 +338,13 @@ class EventCollector:
         result = r.flat()
 
         await self.session_storage.save_chat_previews(*(i.event.chat_preview for i in r.updates))
-        await self.storage.save_order_previews(*(
-            e._order_preview
-            for e in result
-            if isinstance(e, be.OrderEvent) and e._order_preview is not None
-        ))
+        await self.storage.save_order_previews(
+            *(
+                e._order_preview
+                for e in result
+                if isinstance(e, be.OrderEvent) and e._order_preview is not None
+            )
+        )
 
         self.chats_upd_ts = r.timestamp
         return r.flat()

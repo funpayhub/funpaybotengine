@@ -33,7 +33,7 @@ __all__ = [
 
 from typing import Any
 
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 
 from funpaybotengine.types.chat import PrivateChatPreview
 from funpaybotengine.types.orders import OrderPreview
@@ -44,7 +44,7 @@ from funpaybotengine.types.pages.order_page import OrderPage
 from .base import RunnerEvent, BotEngineEvent
 
 
-class NewEventsPack(BotEngineEvent[str], event_name='new_events_pack'): ...
+class NewEventsPack(BotEngineEvent[int], event_name='new_events_pack'): ...
 
 
 class ChatChanged(RunnerEvent[PrivateChatPreview], event_name='chat_changed'):
@@ -94,8 +94,7 @@ class PurchaseEvent(OrderEvent, event_name='__purchase_event__'):
         return orders.orders[0]
 
 
-class NewSale(SaleEvent, event_name='new_sale'):
-    related_auto_message_events: list[NewMessage] = Field(default_factory=list)
+class NewSale(SaleEvent, event_name='new_sale'): ...
 
 
 class SaleStatusChanged(SaleEvent, event_name='sale_status_changed'):
@@ -117,8 +116,7 @@ class SalePartiallyRefunded(SaleRefunded, event_name='sale_partially_refunded'):
 class SaleReopened(SaleStatusChanged, event_name='sale_reopened'): ...
 
 
-class NewPurchase(PurchaseEvent, event_name='new_purchase'):
-    related_auto_message_events: list[NewMessage] = Field(default_factory=list)
+class NewPurchase(PurchaseEvent, event_name='new_purchase'): ...
 
 
 class PurchaseStatusChanged(PurchaseEvent, event_name='purchase_status_changed'):
