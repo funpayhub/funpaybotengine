@@ -5,13 +5,11 @@ __all__ = ('Bot',)
 
 import time
 import asyncio
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, Protocol, overload
+from typing import TYPE_CHECKING, Any, Self, Literal, TypeVar, Protocol, overload
 from io import BytesIO
 from asyncio import Lock, Event
 from contextlib import suppress
 from collections.abc import Callable, Sequence
-
-from typing_extensions import Self
 
 from funpaybotengine.types import (
     Message,
@@ -117,7 +115,7 @@ if TYPE_CHECKING:
 
 
 F = TypeVar('F', bound=Callable[..., Any])
-R = TypeVar('R', bound=Any)
+R = TypeVar('R')
 
 
 class LocaleMismatchHookProto(Protocol):
@@ -128,9 +126,6 @@ class LocaleMismatchHookProto(Protocol):
         __response: Response[R],
     ) -> Response[R]:
         pass
-
-
-R = TypeVar('R')
 
 
 class Bot:
