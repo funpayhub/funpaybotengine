@@ -74,7 +74,7 @@ class Runner:
     ) -> AsyncGenerator[tuple[RunnerEvent[Any] | BotEngineEvent[Any], EventsPack], None]:
         config = config if config is not None else self.config if self.config is not None else RunnerConfig()
         storage = session_storage if session_storage is not None else self._session_storage
-        collector = EventCollector(self.bot, config, session_storage=session_storage)
+        collector = EventCollector(self.bot, config, session_storage=storage)
         backoff = Backoff(config.backoff_config)
 
         await collector.init_chats()
