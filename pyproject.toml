@@ -88,6 +88,12 @@ init_forbid_extra = false
 init_typed = false
 warn_required_dynamic_aliases = true
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+]
+
 [tool.ruff]
 line-length = 99
 src = ["funpaybotengine", "tests"]

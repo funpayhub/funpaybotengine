@@ -77,7 +77,7 @@ def attempts(amount: int = 0) -> Callable[[F], F]:
 @dataclass
 class MsgUpdate:
     event: be.NewMessage
-    related_type: OrderType | None = None
+    related_type: OrderType | None = field(init=False)
 
     def __post_init__(self) -> None:
         meta = self.event.message.meta

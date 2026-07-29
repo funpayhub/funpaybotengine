@@ -14,8 +14,8 @@ from typing import Any, Generic, TypeVar
 from types import MappingProxyType
 
 from pydantic import Field, PrivateAttr
-from eventry.event import Event as EventryEvent
-from eventry._execution_context import (
+from eventry.asyncio import (
+    Event as EventryEvent,
     RouterExecutionContext,
     HandlerExecutionContext,
     ManagerExecutionContext,
