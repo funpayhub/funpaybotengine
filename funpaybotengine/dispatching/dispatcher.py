@@ -7,18 +7,15 @@ __all__ = ['Dispatcher']
 from typing import Any
 
 from eventry.asyncio import Dispatcher as BaseDispatcher, EventDispatchingConfig
-from eventry._execution_context import RouterExecutionContext, HandlerExecutionContext
+from eventry.asyncio import RouterExecutionContext, HandlerExecutionContext, default_error_callback
 
 from funpaybotengine.loggers import dispatcher_logger as logger
 from funpaybotengine.dispatching import Router, ExceptionEvent
 
 
-original_config = EventDispatchingConfig()
-
-
 async def on_error_callback(ctx: RouterExecutionContext, exc: Exception) -> None:
     if isinstance(ctx.event, ExceptionEvent):
-        await original_config.on_error(ctx, exc)
+        await default_error_callback(ctx, exc)
         return
 
     exc_event = ExceptionEvent(object=exc, context=ctx)

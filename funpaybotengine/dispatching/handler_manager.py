@@ -6,8 +6,7 @@ __all__ = ['HandlerManager']
 
 from collections.abc import Callable
 
-from eventry.asyncio import HandlerManager as BaseHandlerManager
-from eventry.asyncio.middleware_manager import MiddlewareStorage
+from eventry.asyncio import HandlerManager as BaseHandlerManager, MiddlewareStorage
 
 from funpaybotengine.dispatching import Event
 
