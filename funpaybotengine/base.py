@@ -41,6 +41,6 @@ class BindableObject(BaseModel):
         return self._bot
 
     def get_bound_bot(self) -> Bot:
-        if not self.bot:
+        if self.bot is None:
             raise BotNotBoundError(self)
         return self.bot
