@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('BindableObject', 'check_bound')
+__all__ = ['BindableObject']
 
 
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -44,21 +44,3 @@ class BindableObject(BaseModel):
         if not self.bot:
             raise BotNotBoundError(self)
         return self.bot
-
-
-def check_bound(func: F) -> F:
-    """
-    Decorator for instance methods to ensure the object is bound to any Bot instance.
-    """
-
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if not args:
-            raise RuntimeError('Can be used only with instance methods.')
-
-        if not isinstance(args[0], BindableObject):
-            raise ValueError(f'{args[0].__class__.__name__} is not a bindable object.')
-        if args[0].bot is None:
-            raise RuntimeError(f'{args[0]} is not bound to any `Bot` instance.')
-        return func(*args, **kwargs)
-
-    return wrapper  # type: ignore
