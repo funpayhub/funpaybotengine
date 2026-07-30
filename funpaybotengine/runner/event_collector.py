@@ -41,11 +41,11 @@ _ORDER_RELATED: dict[MessageType, tuple[Type[be.OrderEvent], Type[be.OrderEvent]
 
 _REVIEW_RELATED: dict[MessageType, Type[be.ReviewEvent]] = {
     MessageType.NEW_FEEDBACK: be.NewReview,
-    MessageType.NEW_FEEDBACK_REPLY: be.NewReviewResponse,
+    MessageType.NEW_FEEDBACK_REPLY: be.NewReviewReply,
     MessageType.FEEDBACK_CHANGED: be.ReviewChanged,
-    MessageType.FEEDBACK_REPLY_CHANGED: be.ReviewResponseChanged,
+    MessageType.FEEDBACK_REPLY_CHANGED: be.ReviewReplyChanged,
     MessageType.FEEDBACK_DELETED: be.ReviewDeleted,
-    MessageType.FEEDBACK_REPLY_DELETED: be.ReviewResponseDeleted,
+    MessageType.FEEDBACK_REPLY_DELETED: be.ReviewReplyDeleted,
 }
 
 _RELATED = _REVIEW_RELATED | _ORDER_RELATED

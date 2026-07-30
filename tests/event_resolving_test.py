@@ -1,5 +1,5 @@
 from funpaybotengine import Bot
-from funpaybotengine.dispatching import NewMessage
+from funpaybotengine.dispatching.events import builtin_events as e
 from funpaybotengine.runner.event_collector import MsgUpdate
 from funpaybotengine.types.messages import Message, MessageType, MessageMeta
 from funpaybotengine.types import  UserBadge, OrderType
@@ -72,7 +72,24 @@ def bot() -> Bot:
         ]
     )
 )
-def test_relation(bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType):
+def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType):
     message.meta = meta
-    upd = MsgUpdate(NewMessage(object=message, tag='').as_(bot))
+    upd = MsgUpdate(e.NewMessage(object=message, tag='').as_(bot))
     assert upd.related_type is related_type
+
+
+@pytest.mark.parametrize(
+    ['meta', 'event_type'],
+    [
+        [MessageMeta(raw_source='', type=MessageType.NEW_FEEDBACK), e.NewReview],
+        [MessageMeta(raw_source='', type=MessageType.NEW_FEEDBACK_REPLY), e.NewReviewReply],
+        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_CHANGED), e.ReviewChanged],
+        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_REPLY_CHANGED), e.ReviewReplyChanged],
+        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_DELETED), e.ReviewDeleted],
+        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_REPLY_DELETED), e.ReviewReplyDeleted],
+    ]
+)
+def test_review_relation(bot: Bot, message: Message, meta: MessageMeta, event_type: e.ReviewEvent):
+    message.meta = meta
+    upd = MsgUpdate(e.NewMessage(object=message, tag='').as_(bot))
+    assert type(upd.event) is event_type

@@ -23,11 +23,11 @@ __all__ = [
     'PurchaseReopened',
     'ReviewEvent',
     'NewReview',
-    'NewReviewResponse',
+    'NewReviewReply',
     'ReviewChanged',
-    'ReviewResponseChanged',
+    'ReviewReplyChanged',
     'ReviewDeleted',
-    'ReviewResponseDeleted',
+    'ReviewReplyDeleted',
 ]
 
 
@@ -162,10 +162,10 @@ class ReviewChanged(ReviewEvent, event_name='review_changed'): ...
 class ReviewDeleted(ReviewEvent, event_name='review_deleted'): ...
 
 
-class NewReviewResponse(ReviewEvent, event_name='new_review_response'): ...
+class NewReviewReply(ReviewEvent, event_name='new_review_reply'): ...
 
 
-class ReviewResponseChanged(ReviewEvent, event_name='review_response_changed'): ...
+class ReviewReplyChanged(ReviewEvent, event_name='review_reply_changed'): ...
 
 
-class ReviewResponseDeleted(ReviewEvent, event_name='review_response_deleted'): ...
+class ReviewReplyDeleted(ReviewEvent, event_name='review_reply_deleted'): ...
