@@ -6,7 +6,7 @@ __all__ = ('FunPayObject', 'FunPayMutableObject')
 import json
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator, Field
 
 from funpaybotengine.base import BindableObject
 
@@ -22,7 +22,7 @@ class FunPayObject(BindableObject, BaseModel):
         from_attributes=True,
     )
 
-    raw_source: str
+    raw_source: str = Field(default='')
     """
     Raw source of an object.
     Typically a HTML string, but in rare cases can be a JSON string.
@@ -34,7 +34,10 @@ class FunPayObject(BindableObject, BaseModel):
     @classmethod
     def _add_raw_source(cls, data: Any) -> Any:
         if isinstance(data, dict) and 'raw_source' not in data:
-            data['raw_source'] = json.dumps(data)
+            try:
+                data['raw_source'] = json.dumps(data)
+            except Exception:
+                data['raw_source'] = ''
         return data
 
 

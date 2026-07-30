@@ -38,38 +38,14 @@ def bot() -> Bot:
 @pytest.mark.parametrize(
     ['meta', 'related_type'],
     (
-        [
-            MessageMeta(raw_source='', type=MessageType.NEW_ORDER, buyer_id=12345),
-            OrderType.PURCHASE,
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.NEW_ORDER, buyer_id=12346),
-            OrderType.SALE
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_CLOSED, buyer_id=12345),
-            OrderType.PURCHASE
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_CLOSED, buyer_id=12346),
-            OrderType.SALE
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_REFUNDED),
-            OrderType.UNKNOWN
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_PARTIALLY_REFUNDED),
-            OrderType.UNKNOWN
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_CLOSED_BY_ADMIN),
-            OrderType.UNKNOWN
-        ],
-        [
-            MessageMeta(raw_source='', type=MessageType.ORDER_REOPENED),
-            OrderType.UNKNOWN
-        ]
+        [MessageMeta(type=MessageType.NEW_ORDER, buyer_id=12345), OrderType.PURCHASE],
+        [MessageMeta(type=MessageType.NEW_ORDER, buyer_id=12346), OrderType.SALE],
+        [MessageMeta(type=MessageType.ORDER_CLOSED, buyer_id=12345), OrderType.PURCHASE],
+        [MessageMeta(type=MessageType.ORDER_CLOSED, buyer_id=12346), OrderType.SALE],
+        [MessageMeta(type=MessageType.ORDER_REFUNDED), OrderType.UNKNOWN],
+        [MessageMeta(type=MessageType.ORDER_PARTIALLY_REFUNDED), OrderType.UNKNOWN],
+        [MessageMeta(type=MessageType.ORDER_CLOSED_BY_ADMIN), OrderType.UNKNOWN],
+        [MessageMeta(type=MessageType.ORDER_REOPENED), OrderType.UNKNOWN]
     )
 )
 def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType):
@@ -81,12 +57,12 @@ def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_t
 @pytest.mark.parametrize(
     ['meta', 'event_type'],
     [
-        [MessageMeta(raw_source='', type=MessageType.NEW_FEEDBACK), e.NewReview],
-        [MessageMeta(raw_source='', type=MessageType.NEW_FEEDBACK_REPLY), e.NewReviewReply],
-        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_CHANGED), e.ReviewChanged],
-        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_REPLY_CHANGED), e.ReviewReplyChanged],
-        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_DELETED), e.ReviewDeleted],
-        [MessageMeta(raw_source='', type=MessageType.FEEDBACK_REPLY_DELETED), e.ReviewReplyDeleted],
+        [MessageMeta(type=MessageType.NEW_FEEDBACK), e.NewReview],
+        [MessageMeta(type=MessageType.NEW_FEEDBACK_REPLY), e.NewReviewReply],
+        [MessageMeta(type=MessageType.FEEDBACK_CHANGED), e.ReviewChanged],
+        [MessageMeta(type=MessageType.FEEDBACK_REPLY_CHANGED), e.ReviewReplyChanged],
+        [MessageMeta(type=MessageType.FEEDBACK_DELETED), e.ReviewDeleted],
+        [MessageMeta(type=MessageType.FEEDBACK_REPLY_DELETED), e.ReviewReplyDeleted],
     ]
 )
 def test_review_relation(bot: Bot, message: Message, meta: MessageMeta, event_type: e.ReviewEvent):
