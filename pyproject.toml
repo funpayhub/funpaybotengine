@@ -8,7 +8,7 @@ license = "MIT"
 dependencies = [
     "aiohttp>=3.13.3,<3.14",
     "aiohttp-socks>=0.11.0",
-    "eventry>=0.4.6,<0.5.0",
+    "eventry>=0.5.0,<0.6.0",
     "funpayparsers>=0.10.0,<0.11.0",
     "pydantic>=2.12,<2.13",
 ]
