@@ -34,11 +34,13 @@ class Refund(FunPayMethod[bool]):
     async def parse_result(self, response: RawResponse[Any]) -> bool:
         try:
             result = json.loads(response.raw_response)
-        except:
+        except Exception:
             raise RefundError(self.order_id, f'Unable to refund order {self.order_id}')
 
         if result.get('error'):
-            raise RefundError(self.order_id, result.get('msg') or f'Unable to refund order {self.order_id}')
+            raise RefundError(
+                self.order_id, result.get('msg') or f'Unable to refund order {self.order_id}'
+            )
         return True
 
     async def transform_result(self, parsing_result: Any, response: RawResponse[Any]) -> bool:

@@ -6,7 +6,7 @@ __all__ = ('FunPayObject', 'FunPayMutableObject')
 import json
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator, Field
+from pydantic import Field, BaseModel, ConfigDict, PrivateAttr, model_validator
 
 from funpaybotengine.base import BindableObject
 

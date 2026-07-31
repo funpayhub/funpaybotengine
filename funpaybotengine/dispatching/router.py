@@ -3,13 +3,16 @@ from __future__ import annotations
 
 __all__ = ['Router']
 
+from typing import Any
+from collections.abc import Callable
 
 from eventry.asyncio.router import Router as BaseRouter
-from funpaybotengine.dispatching.handler_manager import HandlerManager
+
 from funpaybotengine.dispatching import events
+from funpaybotengine.dispatching.handler_manager import HandlerManager
 
 
-class Router(BaseRouter):
+class Router(BaseRouter[Callable[..., Any]]):
     def __init__(self, name: str = '') -> None:
         super().__init__(name=name or f'Router{id(self)}')
 

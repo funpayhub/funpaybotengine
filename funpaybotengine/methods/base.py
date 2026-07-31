@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+
 __all__ = ['FunPayMethod']
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar, get_args, get_type_hints
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
-from collections.abc import Callable, Awaitable, Sequence
+from collections.abc import Callable, Sequence, Awaitable
 
-from pydantic import Field, BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
 
 from funpaybotengine.types.enums import Language

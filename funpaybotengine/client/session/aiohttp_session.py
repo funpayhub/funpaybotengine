@@ -25,7 +25,7 @@ from funpaybotengine.exceptions.session_exceptions import BannedError
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
-    from funpaybotengine.methods.base import FunPayMethod, MethodR
+    from funpaybotengine.methods.base import MethodR, FunPayMethod
 
 
 class AioHttpSession(BaseSession):
@@ -34,7 +34,8 @@ class AioHttpSession(BaseSession):
 
         self._proxy = proxy
         self._default_headers = (
-            headers if headers is not None
+            headers
+            if headers is not None
             else {
                 USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) '
                 'Gecko/20100101 Firefox/140.0',
@@ -68,7 +69,9 @@ class AioHttpSession(BaseSession):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             await asyncio.sleep(0.25)
 
-    def prepare_cookies(self, session: ClientSession, bot: Bot, skip_session_cookies: bool = False) -> None:
+    def prepare_cookies(
+        self, session: ClientSession, bot: Bot, skip_session_cookies: bool = False
+    ) -> None:
         session.cookie_jar.update_cookies({'cookie_prefs': '1'})  # no 3rd-party cookies
 
         with suppress(BotNotInitializedError):

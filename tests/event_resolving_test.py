@@ -1,9 +1,11 @@
+from __future__ import annotations
+
+import pytest
 from funpaybotengine import Bot
+from funpaybotengine.types import OrderType, UserBadge
+from funpaybotengine.types.messages import Message, MessageMeta, MessageType
 from funpaybotengine.dispatching.events import builtin_events as e
 from funpaybotengine.runner.event_collector import MsgUpdate
-from funpaybotengine.types.messages import Message, MessageType, MessageMeta
-from funpaybotengine.types import  UserBadge, OrderType
-import pytest
 
 
 @pytest.fixture(scope='module')
@@ -21,12 +23,10 @@ def message() -> Message:
         chat_id=12345,
         chat_name='',
         meta=MessageMeta(
-            raw_source='',
-            type=MessageType.NEW_ORDER,
-            order_id='ABCDEFGH',
-            buyer_id=12345
-        )
-)
+            raw_source='', type=MessageType.NEW_ORDER, order_id='ABCDEFGH', buyer_id=12345
+        ),
+    )
+
 
 @pytest.fixture(scope='module')
 def bot() -> Bot:
@@ -45,8 +45,8 @@ def bot() -> Bot:
         [MessageMeta(type=MessageType.ORDER_REFUNDED), OrderType.UNKNOWN],
         [MessageMeta(type=MessageType.ORDER_PARTIALLY_REFUNDED), OrderType.UNKNOWN],
         [MessageMeta(type=MessageType.ORDER_CLOSED_BY_ADMIN), OrderType.UNKNOWN],
-        [MessageMeta(type=MessageType.ORDER_REOPENED), OrderType.UNKNOWN]
-    )
+        [MessageMeta(type=MessageType.ORDER_REOPENED), OrderType.UNKNOWN],
+    ),
 )
 def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType):
     message.meta = meta
@@ -63,7 +63,7 @@ def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_t
         [MessageMeta(type=MessageType.FEEDBACK_REPLY_CHANGED), e.ReviewReplyChanged],
         [MessageMeta(type=MessageType.FEEDBACK_DELETED), e.ReviewDeleted],
         [MessageMeta(type=MessageType.FEEDBACK_REPLY_DELETED), e.ReviewReplyDeleted],
-    ]
+    ],
 )
 def test_review_relation(bot: Bot, message: Message, meta: MessageMeta, event_type: e.ReviewEvent):
     message.meta = meta

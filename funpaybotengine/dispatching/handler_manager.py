@@ -4,6 +4,7 @@ from __future__ import annotations
 __all__ = ['HandlerManager']
 
 
+from typing import Any
 from collections.abc import Callable
 
 from eventry.asyncio import HandlerManager as BaseHandlerManager, MiddlewareStorage
@@ -11,7 +12,15 @@ from eventry.asyncio import HandlerManager as BaseHandlerManager, MiddlewareStor
 from funpaybotengine.dispatching import Event
 
 
-class HandlerManager(BaseHandlerManager):
+class HandlerManager(
+    BaseHandlerManager[
+        Callable[..., Any],
+        Callable[..., Any],
+        Callable[..., Any],
+        Callable[..., Any],
+        Callable[..., Any],
+    ]
+):
     def __init__(self, name: str, event_filter: str | Callable[[Event], bool]) -> None:
         super().__init__(name=name, event_filter=event_filter)
 

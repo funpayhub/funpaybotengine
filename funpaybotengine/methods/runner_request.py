@@ -50,7 +50,9 @@ class RunnerRequest(FunPayMethod[RunnerResponse]):
     parser_cls = UpdatesParser
     model_to_build = RunnerResponse
 
-    objects_to_request: Annotated[Sequence[RequestableObject], Field(min_length=1, max_length=10)] | Literal[False] = False
+    objects_to_request: (
+        Annotated[Sequence[RequestableObject], Field(min_length=1, max_length=10)] | Literal[False]
+    ) = False
     action: Action | Literal[False] = False
 
     async def transform_result(

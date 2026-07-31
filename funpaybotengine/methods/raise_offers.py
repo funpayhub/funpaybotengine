@@ -10,7 +10,6 @@ from collections.abc import Sequence
 from pydantic import Field
 from typing_extensions import Annotated
 
-from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.types.common import RaiseOffersResponse
 from funpaybotengine.client.session.http_methods import HTTPMethod
@@ -26,7 +25,7 @@ class RaiseOffers(FunPayMethod[RaiseOffersResponse]):
     data = lambda m, *_: {
         'game_id': m.game_id,
         'node_id': m.subcategory_ids[0],
-        'node_ids[]': m.subcategory_ids
+        'node_ids[]': m.subcategory_ids,
     }
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     model_to_build = RaiseOffersResponse

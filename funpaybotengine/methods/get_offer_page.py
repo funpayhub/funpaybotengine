@@ -18,7 +18,7 @@ class GetOfferPage(FunPayMethod[OfferPage]):
     Returns ``funpaybotengine.types.pages.OfferPage`` obj.
     """
 
-    url = lambda m, *_: ("lots" if isinstance(m.offer_id, int) else "chips") + '/offer'
+    url = lambda m, *_: ('lots' if isinstance(m.offer_id, int) else 'chips') + '/offer'
     method = HTTPMethod.GET
     data = lambda m, *_: {'id': str(m.offer_id)}
     allow_anonymous = True

@@ -18,4 +18,3 @@ class GetTransactionsPage(FunPayMethod[TransactionsPage]):
     method = HTTPMethod.GET
     parser_cls = TransactionsPageParser
     model_to_build = TransactionsPage
-

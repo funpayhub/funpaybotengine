@@ -4,10 +4,11 @@ from __future__ import annotations
 __all__ = ['GetPurchases']
 
 from typing import Any
+
 from funpayparsers.parsers import OrderPreviewsParser
 
 from funpaybotengine.types import OrderPreviewsBatch
-from funpaybotengine.types.enums import OrderStatus, OrderType
+from funpaybotengine.types.enums import OrderType, OrderStatus
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
 

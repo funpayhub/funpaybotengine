@@ -22,7 +22,7 @@ from funpaybotengine.exceptions import (
 
 if TYPE_CHECKING:
     from funpaybotengine.client.bot import Bot
-    from funpaybotengine.methods.base import FunPayMethod, MethodR
+    from funpaybotengine.methods.base import MethodR, FunPayMethod
 
 
 _exceptions: dict[int, Any] = {

@@ -10,7 +10,7 @@ from pydantic import BaseModel, PrivateAttr
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject
-from funpaybotengine.types.enums import OrderStatus, OrderType
+from funpaybotengine.types.enums import OrderType, OrderStatus
 from funpaybotengine.types.common import MoneyValue, UserPreview
 
 

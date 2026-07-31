@@ -5,6 +5,7 @@ __all__ = ['GetOfferFields']
 
 
 from typing import Any
+
 from funpayparsers.parsers import OfferFieldsParser
 
 from funpaybotengine.types.enums import SubcategoryType
@@ -26,8 +27,11 @@ class GetOfferFields(FunPayMethod[OfferFields]):
     Returns ``funpaybotengine.types.pages.OrderPage`` obj.
     """
 
-    url = lambda m, *_: \
-        'logs/offerEdit' if m.subcategory_type is SubcategoryType.OFFERS else f'chips/{m.subcategory_id}/trade'
+    url = lambda m, *_: (
+        'logs/offerEdit'
+        if m.subcategory_type is SubcategoryType.OFFERS
+        else f'chips/{m.subcategory_id}/trade'
+    )
     method = HTTPMethod.GET
     data = gen_data
     parser_cls = OfferFieldsParser

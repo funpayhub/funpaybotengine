@@ -21,7 +21,9 @@ class SaveOfferFields(FunPayMethod[bool]):
     Returns ``funpaybotengine.types.pages.OrderPage`` obj.
     """
 
-    url = lambda m, *_: 'chips/saveOffers' if 'chip' in m.offer_fields.fields_dict else 'lots/offerSave'
+    url = lambda m, *_: (
+        'chips/saveOffers' if 'chip' in m.offer_fields.fields_dict else 'lots/offerSave'
+    )
     method = HTTPMethod.POST
     data = lambda m, *_: m.offer_fields.fields_dict
     headers = {'X-Requested-With': 'XMLHttpRequest'}
@@ -47,7 +49,7 @@ class SaveOfferFields(FunPayMethod[bool]):
         error_msg = str(parsing_result.get('msg', '')) or str(parsing_result.get('error'))
         fields: list[list[str]] = parsing_result.get('errors')
         try:
-            fields_dict = {field: error for field, error in fields}
+            fields_dict = dict(fields)
         except Exception:
             fields_dict = {}
 

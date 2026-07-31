@@ -27,4 +27,3 @@ class GetProfilePage(FunPayMethod[ProfilePage]):
 
     user_id: int
     """User ID."""
-

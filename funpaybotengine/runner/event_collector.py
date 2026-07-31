@@ -58,16 +58,17 @@ debug = logger.debug
 def attempts(amount: int = 0) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         async def inner(*args: Any, **kwargs: Any) -> Any:
-            attempts = amount or float('inf')
-            while attempts:
-                attempts -= 1
+            amount = amount or float('inf')
+            while amount:
+                amount -= 1
                 try:
                     return await func(*args, **kwargs)
                 except UnauthorizedError:
                     raise
                 except UnexpectedHTTPStatusError:
-                    if not attempts:
+                    if not amount:
                         raise
+            return None
 
         return inner
 
