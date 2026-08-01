@@ -8,9 +8,8 @@ from typing import Any
 
 from eventry.asyncio import (
     Dispatcher as BaseDispatcher,
+    DispatchingContext,
     EventDispatchingConfig,
-    RouterExecutionContext,
-    HandlerExecutionContext,
     default_error_callback,
 )
 
@@ -18,7 +17,7 @@ from funpaybotengine.loggers import dispatcher_logger as logger
 from funpaybotengine.dispatching import Router, ExceptionEvent
 
 
-async def on_error_callback(ctx: RouterExecutionContext, exc: Exception) -> None:
+async def on_error_callback(ctx: DispatchingContext, exc: Exception) -> None:
     if isinstance(ctx.event, ExceptionEvent):
         await default_error_callback(ctx, exc)
         return
@@ -31,15 +30,16 @@ async def on_error_callback(ctx: RouterExecutionContext, exc: Exception) -> None
         logger.error('An error occurred while propagating error event.', exc_info=e)
 
 
-async def on_handler(ctx: HandlerExecutionContext, result: Any): ...
+async def on_handler(ctx: DispatchingContext, result: Any): ...
 
 
 # todo: do things depends on a type
 
 
-cfg = EventDispatchingConfig(on_error=on_error_callback, on_handler=on_handler)
-
-
 class Dispatcher(BaseDispatcher):
     def __init__(self, router: Router | None, context: dict[str, Any] | None = None):
-        super().__init__(config=cfg, router=router, event_context=context)
+        super().__init__(
+            config=EventDispatchingConfig(on_error=on_error_callback, on_handler=on_handler),
+            router=router,
+            event_context=context,
+        )

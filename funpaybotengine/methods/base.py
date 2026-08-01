@@ -11,6 +11,7 @@ from email.utils import parsedate_to_datetime
 from collections.abc import Callable, Sequence, Awaitable
 
 from pydantic import BaseModel, ConfigDict
+from typing_extensions import Self
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
 
 from funpaybotengine.types.enums import Language
@@ -25,11 +26,6 @@ if TYPE_CHECKING:
 R = TypeVar('R')
 MethodR = TypeVar('MethodR', bound=Any)
 
-if TYPE_CHECKING:
-    CallableField = Callable[['FunPayMethod[Any]', Bot], R | Awaitable[R]]
-else:
-    CallableField = Callable[[Any, Any], R | Awaitable[R]]
-
 
 _MISSING = object()
 
@@ -38,8 +34,9 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     """Base method class."""
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    CallableField = Callable[[Self, Bot], R | Awaitable[R]] | R
 
-    url: ClassVar[CallableField[str] | str]
+    url: ClassVar[CallableField[str]]
     """Method URL."""
 
     method: ClassVar[HTTPMethod]
@@ -64,14 +61,14 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     If ``True``, ``FunPayMethod.locale`` will be ignored.
     """
 
-    headers: ClassVar[CallableField[dict[str, str]] | dict[str, str]] = lambda *args: {}
+    headers: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
     """
     Headers.
 
     Defaults to empty dict.
     """
 
-    data: ClassVar[CallableField[dict[str, Any]] | dict[str, Any]] = lambda *args: {}
+    data: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
     """
     Additional data.
 
@@ -121,7 +118,7 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     Defaults to ``10.0``.
     """
 
-    context: ClassVar[CallableField[dict[str, Any]] | dict[str, Any] | None] = None
+    context: ClassVar[CallableField[dict[str, Any]] | None] = None
     """
     Additional context for building a final `funpaybotengine` object.
 
@@ -129,6 +126,13 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     """
 
     model_to_build: ClassVar[Type | None] = None
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        for i in cls.__class_vars__:
+            val = getattr(cls, i, None)
+            if inspect.isfunction(val):
+                setattr(cls, i, staticmethod(val))
 
     def get_parser_options(self) -> ParsingOptions | None:
         if self.parser_options is not None:
@@ -201,7 +205,7 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
         if not callable(value):
             return value
 
-        result = value(bot) if inspect.ismethod(value) else value(self, bot)
+        result = value(self, bot)
         return (await result) if inspect.iscoroutine(result) else result
 
     async def get_url(self, bot: Bot) -> str:

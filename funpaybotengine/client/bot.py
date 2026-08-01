@@ -5,11 +5,13 @@ __all__ = ('Bot',)
 
 import time
 import asyncio
-from typing import TYPE_CHECKING, Any, Self, Literal, TypeVar, Protocol, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, Protocol, overload
 from io import BytesIO
 from asyncio import Lock, Event
 from contextlib import suppress
 from collections.abc import Callable, Sequence
+
+from typing_extensions import Self
 
 from funpaybotengine.types import (
     Message,
@@ -408,7 +410,7 @@ class Bot:
             image = (
                 image
                 if isinstance(image, int)
-                else (await UploadImage(image).execute(self)).response_obj
+                else (await UploadImage(file=image).execute(self)).response_obj
             )
         elif text is not None:
             if enforce_whitespaces:

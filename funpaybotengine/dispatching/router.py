@@ -42,7 +42,9 @@ class Router(BaseRouter[Callable[..., Any]]):
         self.on_authenticated = self._fpbe_mgr(events.BotAuthenticatedEvent)
         self.on_new_events_pack = self._fpbe_mgr(events.NewEventsPack)
 
-    def _fpbe_mgr(self, event: type[events.Event], instance_check: bool = False) -> HandlerManager:
+    def _fpbe_mgr(
+        self, event: type[events.Event[Any]], instance_check: bool = False
+    ) -> HandlerManager:
         manager = HandlerManager(
             f'on_{event.__event_name__}',
             (lambda e: isinstance(e, event)) if instance_check else event.__event_name__,

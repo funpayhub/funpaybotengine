@@ -16,9 +16,7 @@ from types import MappingProxyType
 from pydantic import Field, PrivateAttr
 from eventry.asyncio import (
     Event as EventryEvent,
-    RouterExecutionContext,
-    HandlerExecutionContext,
-    ManagerExecutionContext,
+    DispatchingContext,
 )
 
 from funpaybotengine.base import BindableObject
@@ -88,7 +86,7 @@ class BotEngineEvent(Event[EventObject], event_name='funpaybotengine'): ...
 
 
 class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
-    context: RouterExecutionContext | ManagerExecutionContext | HandlerExecutionContext
+    context: DispatchingContext
 
     @property
     def exception(self):

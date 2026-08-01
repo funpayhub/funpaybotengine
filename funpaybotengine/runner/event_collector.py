@@ -4,7 +4,7 @@ import time
 from typing import TYPE_CHECKING, Any, Type, TypeVar
 from dataclasses import field, dataclass
 from collections import ChainMap, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 
 from funpaybotengine.types import Message, PrivateChatPreview
 from funpaybotengine.utils import random_runner_tag
@@ -58,8 +58,10 @@ debug = logger.debug
 def attempts(amount: int = 0) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         async def inner(*args: Any, **kwargs: Any) -> Any:
-            amount = amount or float('inf')
-            while amount:
+            nonlocal amount
+            infinite = not amount
+
+            while infinite or amount:
                 amount -= 1
                 try:
                     return await func(*args, **kwargs)
@@ -109,7 +111,7 @@ class ChatUpdate:
     event: be.ChatChanged
     messages: list[MsgUpdate] = field(default_factory=list)
 
-    def add_message(self, event: be.NewMessage):
+    def add_message(self, event: be.NewMessage) -> None:
         self.messages.append(MsgUpdate(event))
 
     @property
@@ -125,22 +127,22 @@ class EventsPack:
     def add_chat(self, event: be.ChatChanged) -> None:
         self.updates.append(ChatUpdate(event))
 
-    def sales_related(self):
+    def sales_related(self) -> Generator[MsgUpdate, None, None]:
         return (
             m for upd in self.updates for m in upd.messages if m.related_type is OrderType.SALE
         )
 
-    def purchases_related(self):
+    def purchases_related(self) -> Generator[MsgUpdate, None, None]:
         return (
             m for upd in self.updates for m in upd.messages if m.related_type is OrderType.PURCHASE
         )
 
-    def unknown_related(self):
+    def unknown_related(self) -> Generator[MsgUpdate, None, None]:
         return (
             m for upd in self.updates for m in upd.messages if m.related_type is OrderType.UNKNOWN
         )
 
-    def flat(self) -> list[RunnerEvent]:
+    def flat(self) -> list[RunnerEvent[Any]]:
         result = []
         for upd in self.updates:
             result.append(upd.event)
@@ -294,17 +296,17 @@ class EventCollector:
 
         if upd.related_type is OrderType.UNKNOWN:
             if discover is OrderType.SALE and self.config.discover_sales:
-                order = await self._get_sales(order_id=upd.event.object.meta.order_id)
+                order_tuple = await self._get_sales(order_id=upd.event.object.meta.order_id)
             elif discover is OrderType.PURCHASE and self.config.discover_purchases:
-                order = await self._get_purchases(order_id=upd.event.object.meta.order_id)
+                order_tuple = await self._get_purchases(order_id=upd.event.object.meta.order_id)
             else:
                 return
 
-            if not order:
+            if not order_tuple:
                 return
 
             upd.related_type = discover
-            orders[discover][order_id] = order[0]
+            orders[discover][order_id] = order_tuple[0]
 
         cls = _ORDER_RELATED[upd.event.message.meta.type][
             0 if upd.related_type is OrderType.SALE else 1

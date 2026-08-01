@@ -48,7 +48,9 @@ def bot() -> Bot:
         [MessageMeta(type=MessageType.ORDER_REOPENED), OrderType.UNKNOWN],
     ),
 )
-def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType):
+def test_order_relation(
+    bot: Bot, message: Message, meta: MessageMeta, related_type: OrderType
+) -> None:
     message.meta = meta
     upd = MsgUpdate(e.NewMessage(object=message, tag='').as_(bot))
     assert upd.related_type is related_type
@@ -65,7 +67,9 @@ def test_order_relation(bot: Bot, message: Message, meta: MessageMeta, related_t
         [MessageMeta(type=MessageType.FEEDBACK_REPLY_DELETED), e.ReviewReplyDeleted],
     ],
 )
-def test_review_relation(bot: Bot, message: Message, meta: MessageMeta, event_type: e.ReviewEvent):
+def test_review_relation(
+    bot: Bot, message: Message, meta: MessageMeta, event_type: type[e.ReviewEvent]
+) -> None:
     message.meta = meta
     upd = MsgUpdate(e.NewMessage(object=message, tag='').as_(bot))
     assert type(upd.event) is event_type

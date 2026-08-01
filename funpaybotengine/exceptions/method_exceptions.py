@@ -15,5 +15,5 @@ class InvalidOfferFieldsError(MethodError):
         self.message = message
         self.fields = fields
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
