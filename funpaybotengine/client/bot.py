@@ -27,7 +27,8 @@ from funpaybotengine.types import (
     PrivateChatPreview,
     TransactionPreviewsBatch,
     CurrentlyViewingOfferInfo,
-    RaiseOffersResponse
+    RaiseOffersResponse,
+    WithdrawCalcResult,
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -44,6 +45,7 @@ from funpaybotengine.methods import (
     MuteChat,
     CalcChips,
     CheckBanned,
+    WithdrawCalc,
     GetChatPage,
     GetMainPage,
     RaiseOffers,
@@ -461,6 +463,36 @@ class Bot:
     async def calc_lots(self, subcategory_id: int, price: float) -> CalcResult:
         return (
             await CalcLots(subcategory_id=subcategory_id, price=price).execute(self)
+        ).response_obj
+
+    async def calc_withdraw(
+        self,
+        currency_id: str,
+        ext_currency_id: str,
+        wallet: str,
+        amount_int: float | None = None,
+        amount_ext: float | None = None,
+    ) -> WithdrawCalcResult:
+        """
+        Calculate a withdrawal amount.
+
+        Exactly one of ``amount_int`` / ``amount_ext`` must be specified:
+        FunPay calculates the other one and returns it.
+
+        :param currency_id: balance currency ID (e.g. ``'rub'``).
+        :param ext_currency_id: withdrawal method ID (e.g. ``'card_rub'``, ``'fps'``).
+        :param wallet: card / phone / wallet number to withdraw to.
+        :param amount_int: amount to debit from the FunPay balance.
+        :param amount_ext: amount to credit to the wallet.
+        """
+        return (
+            await WithdrawCalc(
+                currency_id=currency_id,
+                ext_currency_id=ext_currency_id,
+                wallet=wallet,
+                amount_int=amount_int,
+                amount_ext=amount_ext,
+            ).execute(self)
         ).response_obj
 
     async def logout(self) -> bool:
