@@ -444,9 +444,29 @@ class Bot:
     async def refund(self, order_id: str) -> bool:
         return (await Refund(order_id=order_id).execute(self)).response_obj
 
-    async def review(self, order_id: str, text: str, rating: Literal[0, 1, 2, 3, 4, 5]) -> bool:
+    async def review(
+        self,
+        order_id: str,
+        text: str,
+        rating: Literal[1, 2, 3, 4, 5] | None = None,
+        reply_review: bool = False,
+    ) -> bool:
+        """Leave or edit a review as the buyer, or reply to one as the seller.
+
+        One endpoint serves both, and who you are on the order is what
+        separates them: the buyer rates, the seller replies and the site posts
+        ``rating=`` empty. ``reply_review`` states which act this is, because
+        a reply built with no rating would otherwise post ``0`` -- accepted by
+        the site, and recorded as the sender's rating on that order.
+
+        Raises ``ReviewRatingRequired`` when neither is stated. Sending
+        where a review already exists **overwrites** it; there is no separate
+        edit call.
+        """
         return (
-            await Review(order_id=order_id, text=text, rating=rating).execute(self)
+            await Review(
+                order_id=order_id, text=text, rating=rating, reply_review=reply_review
+            ).execute(self)
         ).response_obj
 
     async def delete_review(self, order_id: str) -> bool:
