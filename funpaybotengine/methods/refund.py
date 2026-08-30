@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
+from funpaybotengine.loggers import methods_logger
 from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
@@ -42,11 +43,17 @@ class Refund(FunPayMethod[bool], BaseModel):
     async def parse_result(self, response: RawResponse[Any]) -> bool:
         try:
             result = json.loads(response.raw_response)
-        except:
+        except json.JSONDecodeError as exc:
+            # The raw body only at DEBUG: it is the one thing that says WHY this
+            # did not parse, and it is also a whole page of HTML when the answer
+            # was a login form.
+            methods_logger.debug(
+                'refund %s: response is not JSON: %r', self.order_id, response.raw_response
+            )
             raise RefundError(
                 order_id=self.order_id,
-                message=f'Unable to refund order {self.order_id}',
-            )
+                message=f'Unable to refund order {self.order_id}: {exc}',
+            ) from exc
 
         if result.get('error'):
             raise RefundError(
