@@ -324,7 +324,8 @@ class EventCollector:
                 if from_id != 0:
                     if from_id < message.id <= to_id:
                         logger.debug(
-                            'New message in chat %r (%r): %r (from IDs difference: %r < %r <= %r).',
+                            'New message in chat %r (%r): %r '
+                            '(from IDs difference: %r < %r <= %r).',
                             chat_event.chat_preview.username,
                             chat_event.chat_preview.id,
                             message.id,

@@ -12,8 +12,8 @@ from typing_extensions import Annotated
 
 from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
-from funpaybotengine.client.session.http_methods import HTTPMethod
 from funpaybotengine.types.common import RaiseOffersResponse
+from funpaybotengine.client.session.http_methods import HTTPMethod
 
 
 if TYPE_CHECKING:
