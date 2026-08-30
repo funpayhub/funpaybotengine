@@ -20,6 +20,16 @@ if TYPE_CHECKING:
     from funpaybotengine.client.session.base import RawResponse
 
 
+_LOG_BODY_LIMIT = 500
+"""How much of an unparsable body reaches the log.
+
+The whole thing would be the obvious choice and is the wrong one: when the
+answer is a login page it is a full HTML document, and every failed refund would
+put one in the log. The head is what identifies it; the length is printed beside
+it so nothing is silently hidden.
+"""
+
+
 class Refund(FunPayMethod[bool], BaseModel):
     """
     Refund an order (``https://funpay.com/orders/refund``).
@@ -48,7 +58,11 @@ class Refund(FunPayMethod[bool], BaseModel):
             # did not parse, and it is also a whole page of HTML when the answer
             # was a login form.
             methods_logger.debug(
-                'refund %s: response is not JSON: %r', self.order_id, response.raw_response
+                'refund %s: response is not JSON (%d bytes): %r%s',
+                self.order_id,
+                len(response.raw_response),
+                response.raw_response[:_LOG_BODY_LIMIT],
+                '...' if len(response.raw_response) > _LOG_BODY_LIMIT else '',
             )
             raise RefundError(
                 order_id=self.order_id,
