@@ -25,9 +25,9 @@ from funpaybotengine.types import (
     TransactionFilter,
     OrderPreviewsBatch,
     PrivateChatPreview,
+    RaiseOffersResponse,
     TransactionPreviewsBatch,
     CurrentlyViewingOfferInfo,
-    RaiseOffersResponse
 )
 from funpaybotengine.utils import (
     random_runner_tag,
@@ -306,7 +306,6 @@ class Bot:
             ).execute(self)
         ).response_obj
 
-    # ----- Actions -----
     async def mute_chat(self, chat_id: int, mute: bool) -> bool:
         return (await MuteChat(chat_id=chat_id, mute=mute).execute(self)).response_obj
 
@@ -496,7 +495,6 @@ class Bot:
     async def set_offers_hidden(self, hidden: bool) -> bool:
         return (await SetOffersHidden(hidden=hidden).execute(self)).response_obj
 
-    # ----- Runner shortcuts -----
     @overload
     async def get_currently_viewing_offer(
         self,
@@ -602,7 +600,8 @@ class Bot:
 
         :param args: Tuple of (chat_id, after_message_id)
 
-        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects, sorted from oldest to newest.
+        :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message``
+            objects, sorted from oldest to newest.
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
@@ -631,7 +630,6 @@ class Bot:
             return {obj.data.node.id: obj.data.messages for obj in response.nodes}  # type: ignore # todo
         return response.nodes[0].data.messages  # type: ignore # todo
 
-    # ----- Getters -----
     async def get_telegram_connect_url(self) -> str:
         return (await GetTelegramConnectURL().execute(self)).response_obj
 
@@ -800,7 +798,6 @@ class Bot:
             ).execute(self)
         ).response_obj
 
-    # ----- Page getters -----
     async def get_main_page(self) -> MainPage:
         """
         Retrieves the FunPay main page.

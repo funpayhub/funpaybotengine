@@ -126,7 +126,8 @@ def common_only(func: Callable[P, T]) -> Callable[P, T]:
         if not obj.is_common:
             raise RuntimeError(
                 f'Instance of {obj.__class__.__name__} is not describing a common lot fields.\n'
-                f'Use {obj.__class__.__name__}.convert_to_common to convert it to common lot fields.',
+                f'Use {obj.__class__.__name__}.convert_to_common to convert it to '
+                f'common lot fields.',
             )
         return func(*args, **kwargs)
 

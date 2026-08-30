@@ -3,17 +3,17 @@ from __future__ import annotations
 
 __all__ = ('SaveOfferFields',)
 
+import json
 from typing import Any
 
 from pydantic import BaseModel
 from funpayparsers.types import Language
 from funpayparsers.parsers import OfferFieldsParser
 
-from funpaybotengine.exceptions.method_exceptions import InvalidOfferFieldsError
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.types.offers import OfferFields
 from funpaybotengine.client.session import HTTPMethod, RawResponse
-import json
+from funpaybotengine.exceptions.method_exceptions import InvalidOfferFieldsError
 
 
 class SaveOfferFields(FunPayMethod[bool], BaseModel):
@@ -62,7 +62,7 @@ class SaveOfferFields(FunPayMethod[bool], BaseModel):
         error_msg = str(parsing_result.get('msg', '')) or str(parsing_result.get('error'))
         fields: list[list[str, str]] = parsing_result.get('errors')
         try:
-            fields_dict = {field: error for field, error in fields}
+            fields_dict = dict(fields)
         except Exception:
             fields_dict = {}
 
