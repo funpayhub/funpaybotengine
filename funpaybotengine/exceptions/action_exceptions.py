@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ['RefundError', 'RaiseOffersError']
+__all__ = ['RefundError', 'RaiseOffersError', 'ReviewRatingRequiredError']
 import re
 
 from .base import FunPayBotEngineError
@@ -15,6 +15,29 @@ class RefundError(FunPayBotEngineError):
 
     def __str__(self) -> str:
         return self.message
+
+
+class ReviewRatingRequiredError(FunPayBotEngineError):
+    """Leaving a review needs a rating; replying to one does not.
+
+    orders/review serves both, and what separates them is not the endpoint
+    but who you are on the order: as the buyer you rate, as the seller you
+    reply, and the site posts rating= empty.
+
+    Raised at construction, before any request. Without it the two collapse
+    into one: a reply built with no rating would post rating=0, which the
+    site accepts and records as the sender's rating on that order.
+    """
+
+    def __init__(self, order_id: str) -> None:
+        super().__init__()
+        self.order_id = order_id
+
+    def __str__(self) -> str:
+        return (
+            f'{self.order_id}: rating is required to leave a review; '
+            f'to reply to one as the seller pass reply_review=True'
+        )
 
 
 class RaiseOffersError(FunPayBotEngineError):
