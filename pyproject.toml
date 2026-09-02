@@ -11,6 +11,12 @@ dependencies = [
     "eventry>=0.3.6,<0.4.0",
     "funpayparsers>=0.10.0,<0.11.0",
     "pydantic>=2.12,<2.13",
+    # Both are imported directly and both arrived transitively: `yarl` with
+    # `aiohttp` (`client/session/aiohttp_session.py`), `typing_extensions` from
+    # nowhere in particular (`base.py`). Being reachable is not being declared
+    # — it rests on somebody else's choice of version.
+    "yarl>=1.9",
+    "typing_extensions>=4.12",
 ]
 authors = [
     {name = "Qvvonk", email="qvvonk@gmail.com"}
