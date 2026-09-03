@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Type, TypeVar
+from functools import wraps
+from typing import TYPE_CHECKING, Any, Type, TypeVar, ParamSpec
 from dataclasses import field, dataclass
 from collections import ChainMap, defaultdict
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Awaitable
 
 from funpaybotengine.types import Message, PrivateChatPreview
 from funpaybotengine.utils import random_runner_tag
@@ -51,36 +52,39 @@ _REVIEW_RELATED: dict[MessageType, Type[be.ReviewEvent]] = {
 _RELATED = _REVIEW_RELATED | _ORDER_RELATED
 
 
-F = TypeVar('F', bound=Callable[..., Any])
 debug = logger.debug
 
+_P = ParamSpec('_P')
+_R = TypeVar('_R')
 
-def attempts(amount: int = 0) -> Callable[[F], F]:
-    def decorator(func: F) -> F:
-        async def inner(*args: Any, **kwargs: Any) -> Any:
-            nonlocal amount
-            infinite = not amount
+_CALL = Callable[_P, Awaitable[_R]]
 
-            while infinite or amount:
-                amount -= 1
+def attempts(amount: int = 0) -> Callable[[_CALL[_P, _R]], _CALL[_P, _R]]:
+    def decorator(func: _CALL[_P, _R]) -> _CALL[_P, _R]:
+        @wraps(func)
+        async def inner(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+            current_amount = amount
+            infinite = not current_amount
+
+            while infinite or current_amount > 0:
+                current_amount -= 1
                 try:
                     return await func(*args, **kwargs)
                 except UnauthorizedError:
                     raise
                 except UnexpectedHTTPStatusError:
-                    if not amount:
+                    if not current_amount:
                         raise
-            return None
-
+            # This block is unreachable and only exists for type checkers
+            raise RuntimeError('Unreachable code.')
         return inner
-
     return decorator
 
 
 @dataclass
 class MsgUpdate:
     event: be.NewMessage
-    related_type: OrderType | None = field(init=False)
+    related_type: OrderType | None = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         meta = self.event.message.meta
@@ -143,7 +147,7 @@ class EventsPack:
         )
 
     def flat(self) -> list[RunnerEvent[Any]]:
-        result = []
+        result: list[RunnerEvent[Any]] = []
         for upd in self.updates:
             result.append(upd.event)
             for msg in upd.messages:

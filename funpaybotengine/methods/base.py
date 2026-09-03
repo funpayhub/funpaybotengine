@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 R = TypeVar('R')
 MethodR = TypeVar('MethodR', bound=Any)
-CallableField = Union[Callable[[Any, Bot], Awaitable[R] | R], R]
+CallableField = Union[Callable[[Any, 'Bot'], Awaitable[R] | R], R]
 
 
 _MISSING = object()
@@ -84,7 +84,7 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     Defaults to ``None``.
     """
 
-    context: ClassVar[CallableField[dict[str, Any]] | None] = None
+    context: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
     """Additional context for building a final `funpaybotengine` object.
 
     Defaults to empty dict.
@@ -205,9 +205,7 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
         return await self._resolve_callable_field_value(type(self).data, bot)
 
     async def get_context(self, bot: Bot) -> dict[str, Any]:
-        if self.context is None:
-            return {}
-        return await self._resolve_callable_field_value(self.context, bot)
+        return await self._resolve_callable_field_value(type(self).context, bot)
 
     async def execute(self, as_: Bot) -> Response[MethodR]:
         """

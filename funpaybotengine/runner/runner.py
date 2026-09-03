@@ -91,7 +91,7 @@ class Runner:
             pack = EventsPack([])
 
             try:
-                pack.events = await collector.get_events()
+                pack.events.extend(await collector.get_events())
                 if backoff.counter:
                     backoff.reset()
                     logger.info('Connection established. Continuing collecting events.')

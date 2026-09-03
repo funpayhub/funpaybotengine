@@ -8,8 +8,7 @@ from typing import Any
 from collections.abc import Callable
 
 from eventry.asyncio import HandlerManager as BaseHandlerManager, MiddlewareStorage
-
-from funpaybotengine.dispatching import Event
+from eventry.asyncio.event import Event
 
 
 class HandlerManager(
