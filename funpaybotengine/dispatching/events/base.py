@@ -89,7 +89,7 @@ class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
     context: DispatchingContext
 
     @property
-    def exception(self):
+    def exception(self) -> Exception:
         return self.object
 
     def context_injection(self) -> dict[str, Any]:

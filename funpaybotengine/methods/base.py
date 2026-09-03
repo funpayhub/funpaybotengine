@@ -4,14 +4,13 @@ from __future__ import annotations
 __all__ = ['FunPayMethod']
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar
+from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar, Union
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime
 from collections.abc import Callable, Sequence, Awaitable
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Self
 from funpayparsers.parsers.base import ParsingOptions, FunPayObjectParser
 
 from funpaybotengine.types.enums import Language
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
 
 R = TypeVar('R')
 MethodR = TypeVar('MethodR', bound=Any)
+CallableField = Union[Callable[[Any, Bot], Awaitable[R] | R], R]
 
 
 _MISSING = object()
@@ -34,19 +34,70 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     """Base method class."""
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-    CallableField = Callable[[Self, Bot], R | Awaitable[R]] | R
 
     url: ClassVar[CallableField[str]]
     """Method URL."""
 
     method: ClassVar[HTTPMethod]
+    """HTTP Method."""
+
+    headers: ClassVar[CallableField[dict[str, str]]] = lambda *args: {}
+    """Headers.
+
+    Defaults to empty dict.
     """
-    HTTP Method.
+
+    data: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
+    """Additional data.
+
+    Defaults to empty dict.
+    """
+
+    expected_status_codes: ClassVar[Sequence[int | HTTPStatus]] = (HTTPStatus.OK,)
+    """List of expected status codes.
+
+    Defaults to ``(HTTPStatus.OK, )``.
+    """
+
+    allow_anonymous: ClassVar[bool] = False
+    """Whether this method can be executed as anonymous user or not.
+
+    Defaults to ``False``.
+    """
+
+    allow_uninitialized: ClassVar[bool] = False
+    """Whether this method can be executed as uninitialized user or not.
+
+    Defaults to ``False``.
+    """
+
+    ignore_locale: ClassVar[bool] = False
+    """Whether to ignore locale or not.
+
+    If ``True``, ``FunPayMethod.locale`` will be ignored.
+    """
+
+    parser_cls: ClassVar[type[FunPayObjectParser] | None] = None  # type: ignore[type-arg]
+    # unsupported by pydantic
+    """Parser class (not an instance!) for parsing raw source.
+
+    Defaults to ``None``.
+    """
+
+    context: ClassVar[CallableField[dict[str, Any]] | None] = None
+    """Additional context for building a final `funpaybotengine` object.
+
+    Defaults to empty dict.
+    """
+
+    parser_options: ParsingOptions | None = None
+    """Instance of parser options for ``FunPayMethod.parser_cls``.
+
+    Defaults to ``None``.
     """
 
     locale: Language | None = None
-    """
-    FunPay locale.
+    """FunPay locale.
 
     If specified and ``FunPayMethod.ignore_locale`` is ``False``,
     it will override bots locale when making a request.
@@ -54,78 +105,13 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
     Defaults to ``None``.
     """
 
-    ignore_locale: ClassVar[bool] = False
-    """
-    Whether to ignore locale or not.
-
-    If ``True``, ``FunPayMethod.locale`` will be ignored.
-    """
-
-    headers: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
-    """
-    Headers.
-
-    Defaults to empty dict.
-    """
-
-    data: ClassVar[CallableField[dict[str, Any]]] = lambda *args: {}
-    """
-    Additional data.
-
-    Defaults to empty dict.
-    """
-
-    expected_status_codes: ClassVar[Sequence[int | HTTPStatus]] = (HTTPStatus.OK,)
-    """
-    List of expected status codes.
-
-    Defaults to ``(HTTPStatus.OK, )``.
-    """
-
-    allow_anonymous: ClassVar[bool] = False
-    """
-    Whether this method can be executed as anonymous user or not.
-
-    Defaults to ``False``.
-    """
-
-    allow_uninitialized: ClassVar[bool] = False
-    """
-    Whether this method can be executed as uninitialized user or not.
-
-    Defaults to ``False``.
-    """
-
-    parser_cls: ClassVar[type[FunPayObjectParser] | None] = None  # type: ignore[type-arg]
-    # unsupported by pydantic
-    """
-    Parser class (not an instance!) for parsing raw source.
-
-    Defaults to ``None``.
-    """
-
-    parser_options: ClassVar[ParsingOptions | None] = None
-    """
-    Instance of parser options for ``FunPayMethod.parser_cls``.
-
-    Defaults to ``None``.
-    """
-
     timeout: int | float = 10.0
-    """
-    Request timeout.
+    """Request timeout.
 
     Defaults to ``10.0``.
     """
 
-    context: ClassVar[CallableField[dict[str, Any]] | None] = None
-    """
-    Additional context for building a final `funpaybotengine` object.
-
-    Defaults to empty dict.
-    """
-
-    model_to_build: ClassVar[Type | None] = None
+    model_to_build: ClassVar[Type[BaseModel] | None] = None
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
@@ -138,7 +124,8 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
         if self.parser_options is not None:
             return self.parser_options
         if self.parser_cls:
-            return self.parser_cls.get_options_cls()()
+            return self.parser_cls.get_options_cls()()  # type: ignore[no-any-return]
+            # not any
         return None
 
     async def parse_result(self, response: RawResponse[Any]) -> Any:
@@ -172,7 +159,7 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
             return self.model_to_build.model_validate(
                 parsing_result,
                 context=await self.get_full_context(response),
-            )
+            )  # type: ignore[return-value]  # not any base model
 
         raise NotImplementedError(
             f"{self.__class__.__name__} must either define a BaseModel in 'model_to_build' "
@@ -206,16 +193,16 @@ class FunPayMethod(BaseModel, Generic[MethodR], ABC):
             return value
 
         result = value(self, bot)
-        return (await result) if inspect.iscoroutine(result) else result
+        return (await result) if inspect.iscoroutine(result) else result  # type: ignore[return-value]  # not any
 
     async def get_url(self, bot: Bot) -> str:
-        return await self._resolve_callable_field_value(self.url, bot)
+        return await self._resolve_callable_field_value(type(self).url, bot)
 
     async def get_headers(self, bot: Bot) -> dict[str, str]:
-        return await self._resolve_callable_field_value(self.headers, bot)
+        return await self._resolve_callable_field_value(type(self).headers, bot)
 
     async def get_data(self, bot: Bot) -> dict[str, Any]:
-        return await self._resolve_callable_field_value(self.data, bot)
+        return await self._resolve_callable_field_value(type(self).data, bot)
 
     async def get_context(self, bot: Bot) -> dict[str, Any]:
         if self.context is None:

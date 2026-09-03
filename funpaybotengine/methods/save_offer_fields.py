@@ -33,7 +33,8 @@ class SaveOfferFields(FunPayMethod[bool]):
 
     async def parse_result(self, response: RawResponse[Any]) -> bool | dict[str, Any]:
         try:
-            return json.loads(response.raw_response)
+            return json.loads(response.raw_response)  # type: ignore[no-any-return]
+            # it will be dict. If it is not dict, the exception will be raised in transform_result
         except json.decoder.JSONDecodeError:
             return True
 
@@ -47,7 +48,7 @@ class SaveOfferFields(FunPayMethod[bool]):
             return True
 
         error_msg = str(parsing_result.get('msg', '')) or str(parsing_result.get('error'))
-        fields: list[list[str]] = parsing_result.get('errors')
+        fields: list[list[str]] = parsing_result.get('errors', [])
         try:
             fields_dict = dict(fields)
         except Exception:

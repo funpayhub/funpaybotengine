@@ -35,4 +35,5 @@ class RaiseOffers(FunPayMethod[RaiseOffersResponse]):
 
     async def parse_result(self, response: RawResponse[bool]) -> dict[str, Any]:
         data = json.loads(response.raw_response)
-        return {'raw_source': response.raw_response} | data
+        return {'raw_source': response.raw_response} | data  # type: ignore[no-any-return]
+        # it will be dict. If it is not dict, the exception will be raised in transform_result

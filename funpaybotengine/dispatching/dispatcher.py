@@ -30,7 +30,7 @@ async def on_error_callback(ctx: DispatchingContext, exc: Exception) -> None:
         logger.error('An error occurred while propagating error event.', exc_info=e)
 
 
-async def on_handler(ctx: DispatchingContext, result: Any): ...
+async def on_handler(ctx: DispatchingContext, result: Any) -> None: ...
 
 
 # todo: do things depends on a type
