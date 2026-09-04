@@ -169,7 +169,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     fields_names: dict[str, str] = Field(default_factory=dict)
     """Field names."""
 
-    def __post_init__(self) -> None:
+    def model_post_init(self, *_args: Any, **_kwargs: Any) -> None:
         if 'csrf_token' in self.fields_dict:
             del self.fields_dict['csrf_token']
 
