@@ -256,7 +256,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
         """
         self.set_field(f'offer[{server_id}][{side_id}][price]', price)
 
-    def get_currency_status(self, server_id: int, side_id: int) -> bool | None:
+    def get_currency_status(self, server_id: int, side_id: int) -> bool:
         """
         Gets the currency active status.
 
@@ -500,7 +500,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     def images(self, value: list[int] | None) -> None:
         self.set_field(
             'fields[images]',
-            ','.join(str(i) for i in value) if value is not None else None,
+            ','.join(str(i) for i in value) if value else None,
         )
 
     @property
@@ -520,7 +520,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     @secrets.setter
     @common_only
     def secrets(self, value: list[str] | None) -> None:
-        self.set_field('fields[secrets]', '\n'.join(value) if value is not None else None)
+        self.set_field('fields[secrets]', '\n'.join(value) if value else None)
 
     @property
     def active(self) -> bool:
