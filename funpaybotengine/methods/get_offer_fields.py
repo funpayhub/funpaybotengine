@@ -28,7 +28,7 @@ class GetOfferFields(FunPayMethod[OfferFields]):
     """
 
     url = lambda m, *_: (
-        'logs/offerEdit'
+        'lots/offerEdit'
         if m.subcategory_type is SubcategoryType.OFFERS
         else f'chips/{m.subcategory_id}/trade'
     )

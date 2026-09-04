@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class CalcLots(FunPayMethod[CalcResult]):
     url = 'lots/calc'
     method = HTTPMethod.POST
-    data = lambda m, *_: {'nodeId': m.game_id, 'price': m.price}
+    data = lambda m, *_: {'nodeId': m.subcategory_id, 'price': m.price}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     model_to_build = CalcResult
 

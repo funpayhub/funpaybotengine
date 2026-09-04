@@ -27,7 +27,7 @@ class GetChatHistory(FunPayMethod[list[Message]]):
 
     url = 'chat/history'
     method = HTTPMethod.GET
-    data = lambda m, *_: {'node': str(m.chat_id), 'last_message': str(m.last_message_id)}
+    data = lambda m, *_: {'node': str(m.chat_id), 'last_message': str(m.before_message_id)}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
     context = lambda m, *_: {'chat_id' if isinstance(m.chat_id, int) else 'chat_name': m.chat_id}
     allow_anonymous = True

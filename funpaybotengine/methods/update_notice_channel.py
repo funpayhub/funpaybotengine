@@ -24,7 +24,7 @@ class UpdateNoticeChannel(FunPayMethod[bool]):
 
     url = 'account/noticeChannel'
     method = HTTPMethod.POST
-    data = lambda m, *_: {'channel': m.value, 'active': int(m.enabled)}
+    data = lambda m, *_: {'channel': m.channel.value, 'active': int(m.enabled)}
     headers = {'X-Requested-With': 'XMLHttpRequest'}
 
     channel: NoticeChannel

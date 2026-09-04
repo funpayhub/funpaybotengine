@@ -23,7 +23,7 @@ class RaiseOffers(FunPayMethod[RaiseOffersResponse]):
     url = 'lots/raise'
     method = HTTPMethod.POST
     data = lambda m, *_: {
-        'game_id': m.game_id,
+        'game_id': m.category_id,
         'node_id': m.subcategory_ids[0],
         'node_ids[]': m.subcategory_ids,
     }
