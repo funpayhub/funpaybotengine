@@ -37,7 +37,11 @@ async def on_handler(ctx: DispatchingContext, result: Any) -> None: ...
 
 
 class Dispatcher(BaseDispatcher):
-    def __init__(self, router: Router | None, context: dict[str, Any] | None = None):
+    def __init__(
+        self,
+        router: Router | None = None,
+        context: dict[str, Any] | None = None
+    ) -> None:
         super().__init__(
             config=EventDispatchingConfig(on_error=on_error_callback, on_handler=on_handler),
             router=router,
