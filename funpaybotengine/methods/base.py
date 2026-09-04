@@ -4,7 +4,7 @@ from __future__ import annotations
 __all__ = ['FunPayMethod']
 
 import inspect
-from typing import TYPE_CHECKING, Any, Type, Generic, TypeVar, ClassVar, Union
+from typing import TYPE_CHECKING, Any, Type, Union, Generic, TypeVar, ClassVar
 from abc import ABC
 from http import HTTPStatus
 from email.utils import parsedate_to_datetime

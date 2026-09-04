@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import time
-from functools import wraps
 from typing import TYPE_CHECKING, Any, Type, TypeVar, ParamSpec
 from dataclasses import field, dataclass
+from functools import wraps
 from collections import ChainMap, defaultdict
-from collections.abc import Callable, Generator, Awaitable
+from collections.abc import Callable, Awaitable, Generator
 
 from funpaybotengine.types import Message, PrivateChatPreview
 from funpaybotengine.utils import random_runner_tag
@@ -59,6 +59,7 @@ _R = TypeVar('_R')
 
 _CALL = Callable[_P, Awaitable[_R]]
 
+
 def attempts(amount: int = 0) -> Callable[[_CALL[_P, _R]], _CALL[_P, _R]]:
     def decorator(func: _CALL[_P, _R]) -> _CALL[_P, _R]:
         @wraps(func)
@@ -77,7 +78,9 @@ def attempts(amount: int = 0) -> Callable[[_CALL[_P, _R]], _CALL[_P, _R]]:
                         raise
             # This block is unreachable and only exists for type checkers
             raise RuntimeError('Unreachable code.')
+
         return inner
+
     return decorator
 
 
