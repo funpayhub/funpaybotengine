@@ -37,6 +37,7 @@ class Router(BaseRouter[Callable[..., Any]]):
         self.on_review_deleted = self._fpbe_mgr(events.ReviewDeleted)
         self.on_new_review_response = self._fpbe_mgr(events.NewReviewReply)
         self.on_review_response_changed = self._fpbe_mgr(events.ReviewReplyChanged)
+        self.on_review_response_deleted = self._fpbe_mgr(events.ReviewReplyDeleted)
         self.on_error = self._fpbe_mgr(events.ExceptionEvent, True)
         self.on_unauthenticated = self._fpbe_mgr(events.BotUnauthenticatedEvent)
         self.on_authenticated = self._fpbe_mgr(events.BotAuthenticatedEvent)
