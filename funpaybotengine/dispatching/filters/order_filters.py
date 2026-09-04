@@ -32,18 +32,21 @@ class FinalOrderStatusFilter(Filter):
         super().__init__()
         self.order_status = status
 
-    async def __call__(self, event: OrderEvent, events_stack: list[Event[Any]]) -> bool:
+    async def __call__(self, event: OrderEvent, events_pack: list[Event[Any]]) -> bool:
         order_id = event.object.meta.order_id
         if not order_id:
             return False
 
         curr_status: OrderStatus | None = None
 
-        for i in events_stack:
+        for i in events_pack:
             if not isinstance(i, NewMessage):
                 continue
 
             if i.object.meta.type not in _message_type_to_order_status_mapping:
+                continue
+
+            if i.object.meta.order_id != order_id:
                 continue
 
             curr_status = _message_type_to_order_status_mapping[i.object.meta.type]

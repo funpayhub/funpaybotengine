@@ -34,6 +34,8 @@ async def make_data(method: RunnerRequest, bot: Bot) -> dict[str, str]:
         if method.action
         else 'false',
     }
+    # We are serializing exactly 'false' **string**, not bool, due to funpay expects string.
+    # All questions to funpay devs.
 
 
 class RunnerRequest(FunPayMethod[RunnerResponse]):
