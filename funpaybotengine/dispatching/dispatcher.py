@@ -8,8 +8,8 @@ from typing import Any
 
 from eventry.asyncio import (
     Dispatcher as BaseDispatcher,
+    DispatchingConfig,
     DispatchingContext,
-    EventDispatchingConfig,
     default_error_callback,
 )
 
@@ -38,12 +38,10 @@ async def on_handler(ctx: DispatchingContext, result: Any) -> None: ...
 
 class Dispatcher(BaseDispatcher):
     def __init__(
-        self,
-        router: Router | None = None,
-        context: dict[str, Any] | None = None
+        self, router: Router | None = None, context: dict[str, Any] | None = None
     ) -> None:
         super().__init__(
-            config=EventDispatchingConfig(on_error=on_error_callback, on_handler=on_handler),
+            config=DispatchingConfig(on_error=on_error_callback, on_handler=on_handler),
             router=router,
             event_context=context,
         )
