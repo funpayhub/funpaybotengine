@@ -1,6 +1,6 @@
 [project]
 name = "funpaybotengine"
-version = "0.10.0rc1"
+version = "0.10.0rc2"
 description = "Framework for creating FunPay bots."
 requires-python = ">=3.10"
 readme = "README.md"
@@ -10,7 +10,7 @@ dependencies = [
     "aiohttp-socks>=0.11.0",
     "eventry>=0.7.1,<0.8.0",
     "funpayparsers>=0.10.0,<0.11.0",
-    "pydantic>=2.12,<2.13",
+    "pydantic>=2.13,<2.14",
 ]
 authors = [
     {name = "Qvvonk", email="qvvonk@gmail.com"}
