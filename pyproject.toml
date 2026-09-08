@@ -57,9 +57,6 @@ tests = [
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
 ]
-redis = [
-    "redis[hiredis]>=7.1.0",
-]
 
 [build-system]
 requires = ["hatchling"]
