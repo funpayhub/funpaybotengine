@@ -9,7 +9,6 @@ from types import MappingProxyType
 from collections.abc import Mapping, Callable
 
 from pydantic import Field, BaseModel, BeforeValidator
-from typing_extensions import Self
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject, FunPayMutableObject
@@ -123,9 +122,7 @@ def common_only(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
         obj: OfferFields = args[0]  # type: ignore
         if not obj.is_common:
-            raise RuntimeError(
-                f'Instance of {type(obj)!r} is not describing a common lot fields.'
-            )
+            raise RuntimeError(f'Instance of {type(obj)!r} is not describing a common lot fields.')
         return func(*args, **kwargs)
 
     return wrapper
