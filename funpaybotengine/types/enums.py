@@ -32,7 +32,7 @@ class TransactionFilter(str, Enum):
     """Other transactions."""
 
 
-class OrderPreviewType(Enum):
+class OrderType(Enum):
     SALE = auto()
     PURCHASE = auto()
     UNKNOWN = auto()

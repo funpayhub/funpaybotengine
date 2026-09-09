@@ -19,11 +19,7 @@ class GetSrasInfoPage(FunPayMethod[SrasInfoPage]):
     Returns ``funpaybotengine.types.pages.SrasInfoPage``.
     """
 
-    __model_to_build__ = SrasInfoPage
-
-    def __init__(self) -> None:
-        super().__init__(
-            url='sras/info',
-            method=HTTPMethod.GET,
-            parser_cls=SrasInfoPageParser,
-        )
+    url = 'sras/info'
+    method = HTTPMethod.GET
+    parser_cls = SrasInfoPageParser
+    model_to_build = SrasInfoPage

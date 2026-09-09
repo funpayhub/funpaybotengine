@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('Logout',)
+__all__ = ['Logout']
 
 
 from typing import TYPE_CHECKING, Any
@@ -22,19 +22,13 @@ class Logout(FunPayMethod[bool]):
     Returns ``True``.
     """
 
+    url = 'account/logout'
+    method = HTTPMethod.GET
+    data = lambda m, *_: {'token': m.logout_token}
+    expected_status_codes = (200, 302)
+
     logout_token: str
     """Logout token."""
-
-    def __init__(self, logout_token: str):
-        super().__init__(
-            method=HTTPMethod.GET,
-            url='account/logout',
-            data={'token': logout_token},
-            allow_uninitialized=False,
-            allow_anonymous=False,
-            logout_token=logout_token,
-            expected_status_codes=[200, 302],
-        )
 
     async def parse_result(self, response: RawResponse[Any]) -> bool:
         return response.cookies.get('golden_key') == 'deleted'

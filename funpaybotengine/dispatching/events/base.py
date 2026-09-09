@@ -14,7 +14,10 @@ from typing import Any, Generic, TypeVar
 from types import MappingProxyType
 
 from pydantic import Field, PrivateAttr
-from eventry.asyncio.event import Event as EventryEvent
+from eventry.asyncio import (
+    Event as EventryEvent,
+    DispatchingContext,
+)
 
 from funpaybotengine.base import BindableObject
 
@@ -32,8 +35,7 @@ class Event(EventryEvent, BindableObject, Generic[EventObject], event_name='even
     _data: dict[Any, Any] = PrivateAttr(default_factory=dict)
     _flags: set[Any] = PrivateAttr(default_factory=set)
 
-    @property
-    def event_context_injection(self) -> dict[str, Any]:
+    def context_injection(self) -> dict[str, Any]:
         return {'object': self.object}
 
     def __hash__(self) -> int:
@@ -74,36 +76,36 @@ class Event(EventryEvent, BindableObject, Generic[EventObject], event_name='even
 
 
 class RunnerEvent(Event[EventObject], event_name='runner'):
-    tag: str | None = Field(frozen=True)
+    tag: str | None
 
-    @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
-        injection['tag'] = self.tag
-        return injection
+    def context_injection(self) -> dict[str, Any]:
+        return super().context_injection() | {'tag': self.tag}
 
 
 class BotEngineEvent(Event[EventObject], event_name='funpaybotengine'): ...
 
 
 class ExceptionEvent(BotEngineEvent[Exception], event_name='error'):
-    event: Event[Any] = Field(frozen=True)
+    context: DispatchingContext
 
     @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
-        injection.update({'on_event': self.event, 'exception': self.object})
-        return injection
+    def exception(self) -> Exception:
+        return self.object
+
+    def context_injection(self) -> dict[str, Any]:
+        return super().context_injection() | {
+            'exception': self.object,
+            'event_context': self.context,
+        }
 
 
 class BotUnauthenticatedEvent(BotEngineEvent[float], event_name='unauthorized'):
-    delay: float
-
     @property
-    def event_context_injection(self) -> dict[str, Any]:
-        injection = super().event_context_injection
-        injection.update({'delay': self.delay})
-        return injection
+    def delay(self) -> float:
+        return self.object
+
+    def context_injection(self) -> dict[str, Any]:
+        return super().context_injection() | {'delay': self.delay}
 
 
 class BotAuthenticatedEvent(BotEngineEvent[None], event_name='authorized'): ...
