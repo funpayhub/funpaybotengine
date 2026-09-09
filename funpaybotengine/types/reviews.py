@@ -4,8 +4,6 @@ from __future__ import annotations
 __all__ = ('Review', 'ReviewsBatch')
 
 
-from typing import Any
-
 from pydantic import BaseModel
 from funpayparsers.parsers.utils import parse_date_string
 
@@ -100,19 +98,6 @@ class ReviewsBatch(FunPayObject, BaseModel):
     This batch contains a portion of all available reviews (typically 25),
     along with metadata required to fetch the next batch.
     """
-
-    def model_post_init(self, context: dict[Any, Any]) -> None:
-        super().model_post_init(context)
-        if not context:
-            return
-
-        # FunPay omits the hidden ``user_id`` / ``filter`` inputs in a part of the
-        # ``users/reviews`` responses, so the parsed values are unreliable. When the batch
-        # comes from ``GetReviews``, the requested ones are known and are authoritative.
-        if isinstance(context.get('reviews_user_id'), int):
-            self.user_id = context['reviews_user_id']
-        if isinstance(context.get('reviews_filter'), str):
-            self.filter = context['reviews_filter']
 
     reviews: tuple[Review, ...]
     """List of reviews included in this batch."""
