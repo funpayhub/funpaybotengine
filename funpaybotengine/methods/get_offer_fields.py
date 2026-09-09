@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 
-__all__ = ('GetOfferFields',)
+__all__ = ['GetOfferFields']
 
 
-from pydantic import BaseModel
-from funpayparsers.types import Language
+from typing import Any
+
 from funpayparsers.parsers import OfferFieldsParser
 
 from funpaybotengine.types.enums import SubcategoryType
@@ -14,40 +14,29 @@ from funpaybotengine.types.offers import OfferFields
 from funpaybotengine.client.session import HTTPMethod
 
 
-class GetOfferFields(FunPayMethod[OfferFields], BaseModel):
+def gen_data(m: GetOfferFields, *_: Any) -> dict[str, Any]:
+    if m.subcategory_type is SubcategoryType.OFFERS:
+        return {'offer': m.offer_id} if m.offer_id is not None else {'node': m.subcategory_id}
+    return {}
+
+
+class GetOfferFields(FunPayMethod[OfferFields]):
     """
     Get offer fields method.
 
     Returns ``funpaybotengine.types.pages.OrderPage`` obj.
     """
 
+    url = lambda m, *_: (
+        'lots/offerEdit'
+        if m.subcategory_type is SubcategoryType.OFFERS
+        else f'chips/{m.subcategory_id}/trade'
+    )
+    method = HTTPMethod.GET
+    data = gen_data
+    parser_cls = OfferFieldsParser
+    model_to_build = OfferFields
+
     subcategory_type: SubcategoryType
     subcategory_id: int
     offer_id: int | None = None
-
-    __model_to_build__ = OfferFields
-
-    def __init__(
-        self,
-        subcategory_type: SubcategoryType,
-        subcategory_id: int,
-        offer_id: int | None = None,
-        locale: Language | None = None,
-    ):
-        if subcategory_type is SubcategoryType.OFFERS:
-            url = 'lots/offerEdit'
-            data = {'offer': offer_id} if offer_id is not None else {'node': subcategory_id}
-        else:
-            url = f'chips/{subcategory_id}/trade'
-            data = {}
-
-        super().__init__(
-            url=url,
-            method=HTTPMethod.GET,
-            data=data,
-            parser_cls=OfferFieldsParser,
-            locale=locale,
-            subcategory_type=subcategory_type,
-            subcategory_id=subcategory_id,
-            offer_id=offer_id,
-        )

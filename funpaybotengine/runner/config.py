@@ -63,6 +63,10 @@ class RunnerConfig:
 
     backoff_config: BackoffConfig = BackoffConfig()
 
+    def __post_init__(self) -> None:
+        if self.interval < 0:
+            raise ValueError('`interval` must be greater than 0.')
+
 
 class Backoff:
     def __init__(self, config: BackoffConfig) -> None:

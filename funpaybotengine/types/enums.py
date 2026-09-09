@@ -31,10 +31,8 @@ class TransactionFilter(str, Enum):
     OTHER = 'other'
     """Other transactions."""
 
-    UNKNOWN = 'unknown'
 
-
-class OrderPreviewType(Enum):
+class OrderType(Enum):
     SALE = auto()
     PURCHASE = auto()
     UNKNOWN = auto()

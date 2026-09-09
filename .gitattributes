@@ -1,8 +1,0 @@
-* text=auto
-
-*.py text eol=lf
-*.toml text eol=lf
-*.yaml text eol=lf
-*.yml text eol=lf
-*.md text eol=lf
-Makefile text eol=lf

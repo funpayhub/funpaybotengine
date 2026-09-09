@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 
-__all__ = ('GetPurchases',)
+__all__ = ['GetPurchases']
 
-from pydantic import BaseModel
-from funpayparsers.types import Language
+from typing import Any
+
 from funpayparsers.parsers import OrderPreviewsParser
 
 from funpaybotengine.types import OrderPreviewsBatch
-from funpaybotengine.types.enums import OrderStatus, OrderPreviewType
+from funpaybotengine.types.enums import OrderType, OrderStatus
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
 
@@ -20,12 +20,45 @@ STATE_FILTERS = {
 }
 
 
-class GetPurchases(FunPayMethod[OrderPreviewsBatch], BaseModel):
+def _construct_url(m: GetPurchases, *_: Any) -> str:
+    url = 'orders/'
+
+    queries = []
+    if m.order_id_filter is not None:
+        queries.append(f'id={m.order_id_filter}')
+    if m.seller_username_filter is not None:
+        queries.append(f'buyer={m.seller_username_filter}')
+    if m.status_filter is not None:
+        if isinstance(m.status_filter, str):
+            queries.append(f'state={m.status_filter}')
+        else:
+            queries.append(f'state={STATE_FILTERS[m.status_filter]}')
+    if m.game_id_filter is not None:
+        queries.append(f'game_id={m.game_id_filter}')
+
+    if m.other_filters:
+        for k, v in m.other_filters.items():
+            queries.append(f'{k}={v}')
+
+    if not queries:
+        return url
+
+    return url + '?' + '&'.join(queries)
+
+
+class GetPurchases(FunPayMethod[OrderPreviewsBatch]):
     """
     Get a purchases list (``https://funpay.com/orders/``).
 
     Returns ``funpaybotengine.types.OrderPreviewsBatch`` obj.
     """
+
+    url = _construct_url
+    method = HTTPMethod.POST
+    data = lambda m, *_: {'continue': m.from_order_id} if m.from_order_id is not None else {}
+    context = {'order_preview_type': OrderType.PURCHASE}
+    parser_cls = OrderPreviewsParser
+    model_to_build = OrderPreviewsBatch
 
     from_order_id: str | None = None
     order_id_filter: str | None = None
@@ -33,71 +66,3 @@ class GetPurchases(FunPayMethod[OrderPreviewsBatch], BaseModel):
     status_filter: OrderStatus | str | None = None
     game_id_filter: int | None = None
     other_filters: dict[str, str] | None = None
-
-    __model_to_build__ = OrderPreviewsBatch
-
-    def __init__(
-        self,
-        from_order_id: str | None = None,
-        order_id_filter: str | None = None,
-        seller_username_filter: str | None = None,
-        status_filter: OrderStatus | str | None = None,
-        game_id_filter: int | None = None,
-        other_filters: dict[str, str] | None = None,
-        locale: Language | None = None,
-    ):
-        url = self._construct_url(
-            order_id_filter=order_id_filter,
-            seller_username_filter=seller_username_filter,
-            status_filter=status_filter,
-            game_id_filter=game_id_filter,
-            other_filters=other_filters,
-        )
-
-        super().__init__(
-            url=url,
-            method=HTTPMethod.POST,
-            parser_cls=OrderPreviewsParser,
-            data={'continue': from_order_id} if from_order_id is not None else {},
-            locale=locale,
-            context={'order_preview_type': OrderPreviewType.PURCHASE},
-            from_order_id=from_order_id,
-            order_id_filter=order_id_filter,
-            seller_username_filter=seller_username_filter,
-            status_filter=status_filter,
-            game_id_filter=game_id_filter,
-            other_filters=other_filters,
-        )
-
-    def _construct_url(
-        self,
-        order_id_filter: str | None = None,
-        seller_username_filter: str | None = None,
-        status_filter: OrderStatus | str | None = None,
-        game_id_filter: int | None = None,
-        other_filters: dict[str, str] | None = None,
-    ) -> str:
-        url = 'orders/'
-
-        queries = []
-        if order_id_filter is not None:
-            queries.append(f'id={order_id_filter}')
-        if seller_username_filter is not None:
-            queries.append(f'buyer={seller_username_filter}')
-        if status_filter is not None:
-            if isinstance(status_filter, str):
-                queries.append(f'state={status_filter}')
-            else:
-                queries.append(f'state={STATE_FILTERS[status_filter]}')
-        if game_id_filter is not None:
-            queries.append(f'game_id={game_id_filter}')
-
-        if other_filters:
-            for k, v in other_filters.items():
-                queries.append(f'{k}={v}')
-
-        if not queries:
-            return url
-
-        query = '&'.join(queries)
-        return url + '?' + query

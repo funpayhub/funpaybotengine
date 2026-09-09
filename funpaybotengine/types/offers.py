@@ -9,7 +9,6 @@ from types import MappingProxyType
 from collections.abc import Mapping, Callable
 
 from pydantic import Field, BaseModel, BeforeValidator
-from typing_extensions import Self
 from funpayparsers.parsers.utils import parse_date_string
 
 from funpaybotengine.types.base import FunPayObject, FunPayMutableObject
@@ -112,8 +111,7 @@ def chips_only(func: Callable[P, T]) -> Callable[P, T]:
         obj: OfferFields = args[0]  # type: ignore
         if not obj.is_currency:
             raise RuntimeError(
-                f'Instance of {obj.__class__.__name__} is not describing a chips lot fields.\n'
-                f'Use {obj.__class__.__name__}.convert_to_chip to convert it to chips lot fields.',
+                f'Instance of {obj.__class__.__name__} is not describing a chips lot fields.'
             )
         return func(*args, **kwargs)
 
@@ -124,11 +122,7 @@ def common_only(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
         obj: OfferFields = args[0]  # type: ignore
         if not obj.is_common:
-            raise RuntimeError(
-                f'Instance of {obj.__class__.__name__} is not describing a common lot fields.\n'
-                f'Use {obj.__class__.__name__}.convert_to_common to convert it to common lot '
-                'fields.',
-            )
+            raise RuntimeError(f'Instance of {type(obj)!r} is not describing a common lot fields.')
         return func(*args, **kwargs)
 
     return wrapper
@@ -172,9 +166,8 @@ class OfferFields(FunPayMutableObject, BaseModel):
     fields_names: dict[str, str] = Field(default_factory=dict)
     """Field names."""
 
-    def __post_init__(self) -> None:
-        if 'csrf_token' in self.fields_dict:
-            del self.fields_dict['csrf_token']
+    def model_post_init(self, *_args: Any, **_kwargs: Any) -> None:
+        self.fields_dict.pop('csrf_token', None)
 
     def set_field(self, key: str, value: Any) -> None:
         """
@@ -194,54 +187,6 @@ class OfferFields(FunPayMutableObject, BaseModel):
             if not isinstance(value, str):
                 value = str(value)
             self.fields_dict[key] = value
-
-    def convert_to_currency(self, category_id: int, subcategory_id: int) -> Self:
-        """
-        Transform this `OfferFields` instance into a **currency offer** configuration.
-
-        This operation:
-            1. **Clears** all existing fields in ``fields_dict``.
-            2. Sets the ``category_id`` (``game`` field).
-            3. Sets the ``subcategory_id`` (``chip`` field).
-
-        After calling this method, the instance will be considered a *currency-type* offer
-        (``is_currency`` will return ``True``), meaning currency-specific setters/getters (like
-        ``set_currency_amount``) become applicable and common-specific setters/getters
-        will no longer apply.
-
-        :param category_id: Category ID.
-        :param subcategory_id: Subcategory ID.
-
-        :return: The modified instance (self).
-        """
-        self.fields_dict.clear()
-        self.category_id = category_id
-        self.subcategory_id = subcategory_id
-        return self
-
-    def convert_to_common(self, subcategory_id: int | None, offer_id: int) -> Self:
-        """
-        Transform this `OfferFields` instance into a **common offer** configuration.
-
-        This operation:
-            1. **Clears** all existing fields in ``fields_dict``.
-            2. Sets the ``subcategory_id`` (``node_id`` field).
-            3. Sets the ``offer_id`` (``offer_id`` field).
-
-        After calling this method, the instance will be considered a *common-type* offer
-        (``is_currency`` will return ``False``), meaning common-specific setters/getters (like
-        ``offer_id``) become applicable and currency-specific setters/getters
-        will no longer apply.
-
-        :param subcategory_id: Subcategory ID.
-        :param offer_id: Offer ID.
-
-        :return: The modified instance (self).
-        """
-        self.fields_dict.clear()
-        self.subcategory_id = subcategory_id
-        self.offer_id = offer_id
-        return self
 
     def get_currency_amount(self, server_id: int, side_id: int) -> float | None:
         """
@@ -308,7 +253,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
         """
         self.set_field(f'offer[{server_id}][{side_id}][price]', price)
 
-    def get_currency_status(self, server_id: int, side_id: int) -> bool | None:
+    def get_currency_status(self, server_id: int, side_id: int) -> bool:
         """
         Gets the currency active status.
 
@@ -552,7 +497,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     def images(self, value: list[int] | None) -> None:
         self.set_field(
             'fields[images]',
-            ','.join(str(i) for i in value) if value is not None else None,
+            ','.join(str(i) for i in value) if value else None,
         )
 
     @property
@@ -572,7 +517,7 @@ class OfferFields(FunPayMutableObject, BaseModel):
     @secrets.setter
     @common_only
     def secrets(self, value: list[str] | None) -> None:
-        self.set_field('fields[secrets]', '\n'.join(value) if value is not None else None)
+        self.set_field('fields[secrets]', '\n'.join(value) if value else None)
 
     @property
     def active(self) -> bool:

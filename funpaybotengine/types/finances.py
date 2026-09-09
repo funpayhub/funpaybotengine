@@ -6,7 +6,6 @@ __all__ = ('TransactionPreview', 'TransactionInfo', 'TransactionPreviewsBatch')
 
 from types import MappingProxyType
 from collections.abc import Mapping
-from typing import Any
 
 from pydantic import BaseModel, field_validator
 from funpayparsers.parsers.utils import parse_date_string
@@ -84,18 +83,21 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     user_id: int | None
     """ID of the user to whom all transactions in this batch belong."""
 
-    filter: TransactionFilter
-    """
-    Transactions filter applied to the current batch.
+    filter: TransactionFilter | None
+    """Transactions filter applied to the current batch."""
 
-    The building method stamps this with the filter that was actually requested
-    (see ``GetTransactions.transform_result``). The value scraped from the response
-    HTML is only a fallback for hand-built objects, since FunPay omits the hidden
-    ``filter`` input in some responses.
-
-    ``None`` means the filter is unknown, which is not the same as
-    ``TransactionFilter.ALL``.
-    """
+    @field_validator('filter', mode='before')
+    @classmethod
+    def _coerce_transaction_filter(
+        cls,
+        value: str | TransactionFilter | None,
+    ) -> TransactionFilter | None:
+        if value is None or isinstance(value, TransactionFilter):
+            return value
+        try:
+            return TransactionFilter(value)
+        except ValueError:
+            return None
 
     next_transaction_id: int | None
     """
@@ -107,19 +109,11 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     If ``None``, there are no more transactions to load.
     """
 
-    @field_validator('filter', mode='before')
-    @classmethod
-    def _coerce_transaction_filter(cls, value: Any) -> TransactionFilter | None:
-        try:
-            return TransactionFilter(value)
-        except ValueError:
-            return TransactionFilter.UNKNOWN
-
     async def next_batch(self) -> TransactionPreviewsBatch:
         if not self.next_transaction_id:
             raise ValueError('Last batch.')
 
         return await self.get_bound_bot().get_transactions(
             from_transaction_id=self.next_transaction_id,
-            filter=self.filter,
+            filter=self.filter or '',
         )

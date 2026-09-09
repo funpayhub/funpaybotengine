@@ -50,12 +50,12 @@ class MessageSenderIDFilter(Filter):
 
 
 class MessageHasImageFilter(Filter):
-    def __init__(self, has_image: bool, /):
+    def __init__(self, has_image: bool = True, /):
         super().__init__()
         self.has_image = has_image
 
     async def __call__(self, event: Event[Message]) -> bool:
-        return bool(event.object.image_url)
+        return bool(event.object.image_url) is self.has_image
 
 
 class _MessageTypeFilter(Filter):

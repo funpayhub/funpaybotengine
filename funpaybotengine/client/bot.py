@@ -60,13 +60,12 @@ from funpaybotengine.methods import (
     GetMyChipsPage,
     GetOfferFields,
     GetProfilePage,
-    GetSettingPage,
     GetMyOffersPage,
+    GetSettingsPage,
     GetSrasInfoPage,
     GetTransactions,
     SaveOfferFields,
     SetOffersHidden,
-    MethodReturnType,
     GetSubcategoryPage,
     GetTransactionsPage,
     UpdateNoticeChannel,
@@ -114,11 +113,11 @@ from funpaybotengine.client.session.aiohttp_session import AioHttpSession
 
 if TYPE_CHECKING:
     from funpaybotengine.client.session.base import BaseSession
-    from funpaybotengine.dispatching.routers.dispatcher import Dispatcher
+    from funpaybotengine.dispatching.dispatcher import Dispatcher
 
 
 F = TypeVar('F', bound=Callable[..., Any])
-R = TypeVar('R', bound=Any)
+R = TypeVar('R')
 
 
 class LocaleMismatchHookProto(Protocol):
@@ -157,16 +156,15 @@ class Bot:
 
         self._storage = storage or InMemoryStorage()
         self._runner = Runner(self)
-        self._session = session or AioHttpSession(proxy=proxy, default_headers=default_headers)
+        self._session = session or AioHttpSession(proxy=proxy, headers=default_headers)
         self._session_updated_at = 0
 
         self._on_locale_mismatch_hook: LocaleMismatchHookProto = force_locale_hook
         self.update_categories: bool = update_categories
 
         self._messages_lock = Lock()
-        self._listening_lock = Lock()
-        self._stopping_lock = Lock()
 
+        self._listening_lock = Lock()
         self._stop_event = Event()
         self._stopped_event = Event()
         self._stopped_event.set()
@@ -412,7 +410,7 @@ class Bot:
             image = (
                 image
                 if isinstance(image, int)
-                else (await UploadImage(image).execute(self)).response_obj
+                else (await UploadImage(file=image).execute(self)).response_obj
             )
         elif text is not None:
             if enforce_whitespaces:
@@ -466,8 +464,6 @@ class Bot:
     async def logout(self) -> bool:
         if self._logout_token is None:
             await self.update()
-        if self._logout_token is None:
-            raise BotNotInitializedError(self)
 
         return (await Logout(logout_token=self._logout_token).execute(self)).response_obj
 
@@ -605,7 +601,7 @@ class Bot:
         :param args: Tuple of (chat_id, after_message_id)
 
         :returns: A dictionary [chat_id, list] or a list of up to 100 ``Message`` objects,
-            sorted from oldest to newest.
+        sorted from oldest to newest.
         """
         if not args and chat_id is None:
             raise ValueError('Either `chat_id` or `args` must be provided.')
@@ -798,7 +794,7 @@ class Bot:
     ) -> TransactionPreviewsBatch:
         return (
             await GetTransactions(
-                filter=filter,
+                filter=TransactionFilter(filter),
                 from_transaction_id=from_transaction_id,
             ).execute(self)
         ).response_obj
@@ -855,7 +851,7 @@ class Bot:
         return (await GetSrasInfoPage().execute(self)).response_obj
 
     async def get_settings_page(self) -> SettingsPage:
-        return (await GetSettingPage().execute(self)).response_obj
+        return (await GetSettingsPage().execute(self)).response_obj
 
     async def get_transactions_page(self) -> TransactionsPage:
         return (await GetTransactionsPage().execute(self)).response_obj
@@ -871,11 +867,11 @@ class Bot:
 
     async def make_request(
         self,
-        method: FunPayMethod[MethodReturnType],
+        method: FunPayMethod[R],
         skip_update: bool = False,
         skip_locale_check: bool = False,
         skip_session_cookies: bool = False,
-    ) -> Response[MethodReturnType]:
+    ) -> Response[R]:
         if not method.allow_anonymous and self.anonymous:
             raise RuntimeError(
                 f"Method '{method.__class__.__name__}' cannot be executed anonymously.",
@@ -950,20 +946,16 @@ class Bot:
         *,
         config: RunnerConfig | None = None,
         session_storage: Storage | None = None,
-        workflow_injection: dict[str, Any] | None = None,
+        context_injection: dict[str, Any] | None = None,
     ) -> None:
-        workflow_injection = workflow_injection if workflow_injection is not None else {}
+        context_injection = context_injection if context_injection is not None else {}
         try:
             async with self.session:
                 listener = self._runner.listen(config=config, session_storage=session_storage)
-                async for event, stack in listener:
-                    await dp.event_entry(
+                async for event, pack in listener:
+                    await dp.propagate_event(
                         event,
-                        event_context_injection={
-                            **workflow_injection,
-                            'events_stack': stack,
-                            'bot': self,
-                        },
+                        additional_context={**context_injection, 'events_pack': pack, 'bot': self},
                     )
         except KeyboardInterrupt:
             return
@@ -978,36 +970,47 @@ class Bot:
         workflow_injection: dict[str, Any] | None = None,
     ) -> None:
         if self._listening_lock.locked():
-            raise RuntimeError('Already listening')
+            raise RuntimeError('Already listening.')
 
         async with self._listening_lock:
             self._stop_event.clear()
             self._stopped_event.clear()
 
-            tasks = [
-                asyncio.create_task(
-                    self._listen_events(
-                        dp,
-                        config=config,
-                        session_storage=session_storage,
-                        workflow_injection=workflow_injection,
-                    ),
-                ),
-                asyncio.create_task(self._stop_event.wait()),
-            ]
+            listener_task = asyncio.create_task(
+                self._listen_events(
+                    dp,
+                    config=config,
+                    session_storage=session_storage,
+                    context_injection=workflow_injection,
+                )
+            )
+            stop_task = asyncio.create_task(self._stop_event.wait())
 
-            _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
+            try:
+                done, pending = await asyncio.wait(
+                    [listener_task, stop_task], return_when=asyncio.FIRST_COMPLETED
+                )
+
+                # Если таска прослушивания событий упала - райзим исключение наверх.
+                if listener_task in done:
+                    await listener_task
+                    return
+
+                listener_task.cancel()
                 with suppress(asyncio.CancelledError):
-                    task.cancel()
-            self._stopped_event.set()
+                    await listener_task
+
+            finally:
+                for task in (listener_task, stop_task):
+                    if not task.done():
+                        task.cancel()
+
+                await asyncio.gather(listener_task, stop_task, return_exceptions=True)
+                self._stopped_event.set()
 
     async def stop_listening(self) -> None:
         if self._stopped_event.is_set():
-            raise RuntimeError('Listening is already stopped.')
-        if self._stopping_lock.locked():
-            raise RuntimeError('Listening stopping already in progress.')
+            return
 
-        async with self._stopping_lock:
-            self._stop_event.set()
-            await self._stopped_event.wait()
+        self._stop_event.set()
+        await self._stopped_event.wait()
