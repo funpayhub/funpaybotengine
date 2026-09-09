@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('Get2faStatus',)
+__all__ = ['Get2faStatus']
 
 from typing import TYPE_CHECKING
 
@@ -14,28 +14,13 @@ if TYPE_CHECKING:
 
 
 class Get2faStatus(FunPayMethod[bool]):
-    def __init__(
-        self,
-    ) -> None:
-        super().__init__(
-            url='security/twoFactorSetting',
-            method=HTTPMethod.GET,
-            expected_status_codes=[200],
-            allow_anonymous=False,
-            allow_uninitialized=False,
-        )
+    url = 'security/twoFactorSetting'
+    method = HTTPMethod.GET
 
     async def parse_result(self, response: RawResponse[bool]) -> bool:
-        locale = response.executed_as.locale.name
-
-        if locale == 'EN':
-            query = 'enable 2fa'
-        elif locale == 'UK':
-            query = 'увімкнути 2fa'
-        else:
-            query = 'включить 2fa'
-
-        return query not in response.raw_response.lower()
+        lang = response.executed_as.locale.name
+        q = 'enable 2fa' if lang == 'EN' else 'увімкнути 2fa' if lang == 'UK' else 'включить 2fa'
+        return q not in response.raw_response.lower()
 
     async def transform_result(self, parsing_result: bool, response: RawResponse[bool]) -> bool:
         return parsing_result

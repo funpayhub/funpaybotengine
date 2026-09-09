@@ -140,7 +140,11 @@ class Message(FunPayObject, BaseModel):
         return self.bot.userid == self.sender_id
 
     @property
-    def timestamp(self) -> int:
+    def timestamp(self) -> int:  # todo: remove
+        return self.ts
+
+    @property
+    def ts(self) -> int:
         if not self.send_date_text:
             return 0
         return parse_date_string(self.send_date_text)

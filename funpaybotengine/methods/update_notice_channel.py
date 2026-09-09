@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-__all__ = ('UpdateNoticeChannel',)
+__all__ = ['UpdateNoticeChannel']
 
 
 from typing import TYPE_CHECKING, Any
@@ -22,26 +22,16 @@ class UpdateNoticeChannel(FunPayMethod[bool]):
     Returns ``True``.
     """
 
+    url = 'account/noticeChannel'
+    method = HTTPMethod.POST
+    data = lambda m, *_: {'channel': m.channel.value, 'active': int(m.enabled)}
+    headers = {'X-Requested-With': 'XMLHttpRequest'}
+
     channel: NoticeChannel
     """Notification channel."""
 
     enabled: bool
     """Notification channel active status."""
-
-    def __init__(self, channel: NoticeChannel, enabled: bool):
-        super().__init__(
-            url='account/noticeChannel',
-            method=HTTPMethod.POST,
-            data={
-                'channel': channel.value,
-                'active': int(enabled),
-            },
-            headers={'X-Requested-With': 'XMLHttpRequest'},
-            allow_anonymous=False,
-            allow_uninitialized=False,
-            channel=channel,
-            enabled=enabled,
-        )
 
     async def parse_result(self, response: RawResponse[Any]) -> bool:
         return True

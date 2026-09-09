@@ -1,36 +1,37 @@
 from __future__ import annotations
 
-from .base import *
-from .logout import *
-from .refund import *
-from .review import *
-from .calc_lots import *
-from .get_sales import *
-from .mute_chat import *
-from .calc_chips import *
-from .check_banned import *
-from .raise_offers import *
-from .upload_image import *
-from .delete_review import *
-from .get_chat_page import *
-from .get_main_page import *
-from .get_purchases import *
-from .upload_avatar import *
-from .get_2fa_status import *
-from .get_offer_page import *
-from .get_order_page import *
-from .runner_request import *
-from .get_chat_history import *
-from .get_offer_fields import *
-from .get_profile_page import *
-from .get_transactions import *
-from .get_my_chips_page import *
-from .get_settings_page import *
-from .save_offer_fields import *
-from .set_offers_hidden import *
-from .get_sras_info_page import *
-from .get_my_offers_page import *
-from .get_subcategory_page import *
-from .get_transactions_page import *
-from .update_notice_channel import *
-from .get_telegram_connect_url import *
+from .base import FunPayMethod as FunPayMethod
+from .logout import Logout as Logout
+from .refund import Refund as Refund
+from .review import Review as Review
+from .calc_lots import CalcLots as CalcLots
+from .get_sales import GetSales as GetSales
+from .mute_chat import MuteChat as MuteChat
+from .calc_chips import CalcChips as CalcChips
+from .get_reviews import GetReviews as GetReviews
+from .check_banned import CheckBanned as CheckBanned
+from .raise_offers import RaiseOffers as RaiseOffers
+from .upload_image import UploadImage as UploadImage
+from .delete_review import DeleteReview as DeleteReview
+from .get_chat_page import GetChatPage as GetChatPage
+from .get_main_page import GetMainPage as GetMainPage
+from .get_purchases import GetPurchases as GetPurchases
+from .upload_avatar import UploadAvatar as UploadAvatar
+from .get_2fa_status import Get2faStatus as Get2faStatus
+from .get_offer_page import GetOfferPage as GetOfferPage
+from .get_order_page import GetOrderPage as GetOrderPage
+from .runner_request import RunnerRequest as RunnerRequest
+from .get_chat_history import GetChatHistory as GetChatHistory
+from .get_offer_fields import GetOfferFields as GetOfferFields
+from .get_profile_page import GetProfilePage as GetProfilePage
+from .get_transactions import GetTransactions as GetTransactions
+from .get_my_chips_page import GetMyChipsPage as GetMyChipsPage
+from .get_settings_page import GetSettingsPage as GetSettingsPage
+from .save_offer_fields import SaveOfferFields as SaveOfferFields
+from .set_offers_hidden import SetOffersHidden as SetOffersHidden
+from .get_my_offers_page import GetMyOffersPage as GetMyOffersPage
+from .get_sras_info_page import GetSrasInfoPage as GetSrasInfoPage
+from .get_subcategory_page import GetSubcategoryPage as GetSubcategoryPage
+from .get_transactions_page import GetTransactionsPage as GetTransactionsPage
+from .update_notice_channel import UpdateNoticeChannel as UpdateNoticeChannel
+from .get_telegram_connect_url import GetTelegramConnectURL as GetTelegramConnectURL

@@ -4,6 +4,7 @@ from __future__ import annotations
 __all__ = ('TransactionPreview', 'TransactionInfo', 'TransactionPreviewsBatch')
 
 
+from typing import Any
 from types import MappingProxyType
 from collections.abc import Mapping
 
@@ -76,6 +77,15 @@ class TransactionPreviewsBatch(FunPayObject, BaseModel):
     This batch contains a portion of all available transaction previews (typically 25),
     along with metadata required to fetch the next batch.
     """
+
+    def model_post_init(self, context: dict[Any, Any]) -> None:
+        super().model_post_init(context)
+
+        # FunPay omits the hidden ``filter`` input in a part of the ``users/transactions``
+        # responses, so the parsed value is unreliable. When the batch comes from
+        # ``GetTransactions``, the requested filter is known and is authoritative.
+        if context and isinstance(context.get('transactions_filter'), TransactionFilter):
+            self.filter = context['transactions_filter']
 
     transactions: tuple[TransactionPreview, ...]
     """List of transaction previews included in this batch."""

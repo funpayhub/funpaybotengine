@@ -4,6 +4,8 @@ from __future__ import annotations
 __all__ = ('Review', 'ReviewsBatch')
 
 
+from typing import Any
+
 from pydantic import BaseModel
 from funpayparsers.parsers.utils import parse_date_string
 
@@ -99,6 +101,19 @@ class ReviewsBatch(FunPayObject, BaseModel):
     along with metadata required to fetch the next batch.
     """
 
+    def model_post_init(self, context: dict[Any, Any]) -> None:
+        super().model_post_init(context)
+        if not context:
+            return
+
+        # FunPay omits the hidden ``user_id`` / ``filter`` inputs in a part of the
+        # ``users/reviews`` responses, so the parsed values are unreliable. When the batch
+        # comes from ``GetReviews``, the requested ones are known and are authoritative.
+        if isinstance(context.get('reviews_user_id'), int):
+            self.user_id = context['reviews_user_id']
+        if isinstance(context.get('reviews_filter'), str):
+            self.filter = context['reviews_filter']
+
     reviews: tuple[Review, ...]
     """List of reviews included in this batch."""
 
@@ -128,19 +143,20 @@ class ReviewsBatch(FunPayObject, BaseModel):
     """
 
     async def next_batch(self) -> ReviewsBatch:
+        """
+        Fetch the next batch of reviews, keeping the filter of the current one.
+
+        :raises ValueError: if this is the last batch, or if the reviewed user is unknown
+            (a batch taken from an order page carries no ``user_id`` to paginate with).
+        """
         if not self.next_review_id:
             raise ValueError('Last batch.')
 
         if self.user_id is None:
             raise ValueError('Unknown user id.')
 
-        # Imported lazily to avoid a circular import between types and methods.
-        from funpaybotengine.methods.get_reviews import GetReviews
-
-        return (
-            await GetReviews(
-                user_id=self.user_id,
-                from_review_id=self.next_review_id,
-                filter=self.filter or '',
-            ).execute(self.get_bound_bot())
-        ).response_obj
+        return await self.get_bound_bot().get_reviews(
+            user_id=self.user_id,
+            from_review_id=self.next_review_id,
+            filter=self.filter or '',
+        )

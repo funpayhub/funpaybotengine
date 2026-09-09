@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 
-__all__ = ('UploadImage',)
+__all__ = ['UploadImage']
 
 
 import json
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from io import BytesIO
 
-from pydantic import BaseModel
-
-from funpaybotengine.types.enums import Language
 from funpaybotengine.methods.base import FunPayMethod
 from funpaybotengine.client.session.http_methods import HTTPMethod
 
@@ -19,29 +16,25 @@ if TYPE_CHECKING:
     from funpaybotengine.client.session.base import RawResponse
 
 
-class UploadImage(FunPayMethod[int], BaseModel):
+class UploadImage(FunPayMethod[int]):
     """
     Uploads chat image (``https://funpay.com/``).
 
     Returns image ID (``int``).
     """
 
+    url = 'file/addChatImage'
+    method = HTTPMethod.POST
+    data = lambda m, *_: {'file': m.file}
+    headers = {'X-Requested-With': 'XMLHttpRequest'}
+
     file: str | BytesIO
     """Image stream or path to image to upload."""
 
-    def __init__(self, file: str | BytesIO, locale: Language | None = None):
-        if isinstance(file, str):
-            with open(file, 'rb') as f:
-                file = BytesIO(f.read())
-
-        super().__init__(
-            url='file/addChatImage',
-            method=HTTPMethod.POST,
-            locale=locale,
-            data={'file': file},
-            headers={'X-Requested-With': 'XMLHttpRequest'},
-            file=file,
-        )
+    def model_post_init(self, context: Any, /) -> None:
+        if isinstance(self.file, str):
+            with open(self.file, 'rb') as f:
+                self.file = BytesIO(f.read())
 
     async def transform_result(self, parsing_result: str, response: RawResponse[Any]) -> int:
-        return cast(int, json.loads(parsing_result)['fileId'])
+        return int(json.loads(parsing_result)['fileId'])

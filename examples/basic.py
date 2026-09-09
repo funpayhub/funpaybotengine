@@ -4,15 +4,16 @@ import sys
 import asyncio
 import logging
 
-from funpaybotengine import Bot, Dispatcher
+from funpaybotengine import Bot, Router, Dispatcher
 from funpaybotengine.types import Message
 
 
 bot: Bot = Bot(golden_key='token')
-dp: Dispatcher = Dispatcher()
+router = Router(name='my_router')
+dp: Dispatcher = Dispatcher(router)
 
 
-@dp.on_new_message()
+@router.on_new_message()
 async def echo(message: Message) -> None:
     await message.reply(text='echo')
 
