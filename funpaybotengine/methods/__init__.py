@@ -8,6 +8,7 @@ from .calc_lots import CalcLots as CalcLots
 from .get_sales import GetSales as GetSales
 from .mute_chat import MuteChat as MuteChat
 from .calc_chips import CalcChips as CalcChips
+from .get_reviews import GetReviews as GetReviews
 from .check_banned import CheckBanned as CheckBanned
 from .raise_offers import RaiseOffers as RaiseOffers
 from .upload_image import UploadImage as UploadImage

@@ -21,6 +21,7 @@ from funpaybotengine.types import (
     CalcResult,
     OfferFields,
     Subcategory,
+    ReviewsBatch,
     RunnerResponse,
     TransactionFilter,
     OrderPreviewsBatch,
@@ -43,6 +44,7 @@ from funpaybotengine.methods import (
     GetSales,
     MuteChat,
     CalcChips,
+    GetReviews,
     CheckBanned,
     GetChatPage,
     GetMainPage,
@@ -729,6 +731,33 @@ class Bot:
         )
 
         return (await method.execute(self)).response_obj
+
+    async def get_reviews(
+        self,
+        user_id: int,
+        from_review_id: str = '',
+        filter: str = '',
+    ) -> ReviewsBatch:
+        """
+        Fetch a batch of reviews left for the given user.
+
+        If ``from_review_id`` is provided, the method retrieves reviews after the
+        specified review ID, enabling pagination.
+
+        :param user_id: ID of the user whose reviews to fetch.
+        :param from_review_id: Optional. The review ID to start pagination from.
+        :param filter: Optional. Rating filter: ``''`` for all reviews,
+            or ``'1'`` ... ``'5'`` to only include reviews with the given amount of stars.
+
+        :return: A batch of reviews (``ReviewsBatch``).
+        """
+        return (
+            await GetReviews(
+                user_id=user_id,
+                from_review_id=from_review_id,
+                filter=filter,
+            ).execute(self)
+        ).response_obj
 
     @overload
     async def get_offer_fields(

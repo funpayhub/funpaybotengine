@@ -126,3 +126,22 @@ class ReviewsBatch(FunPayObject, BaseModel):
     If present, this value should be included in the next request to fetch
     the following batch of reviews. If ``None``, there are no more reviews to load.
     """
+
+    async def next_batch(self) -> ReviewsBatch:
+        """
+        Fetch the next batch of reviews, keeping the filter of the current one.
+
+        :raises ValueError: if this is the last batch, or if the reviewed user is unknown
+            (a batch taken from an order page carries no ``user_id`` to paginate with).
+        """
+        if not self.next_review_id:
+            raise ValueError('Last batch.')
+
+        if self.user_id is None:
+            raise ValueError('Unknown user id.')
+
+        return await self.get_bound_bot().get_reviews(
+            user_id=self.user_id,
+            from_review_id=self.next_review_id,
+            filter=self.filter or '',
+        )

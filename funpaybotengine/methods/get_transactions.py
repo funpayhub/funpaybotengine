@@ -6,6 +6,9 @@ __all__ = ['GetTransactions']
 from typing import TYPE_CHECKING, Any
 
 from funpayparsers.parsers import TransactionPreviewsParser
+from funpayparsers.types.finances import (
+    TransactionPreviewsBatch as ParsedTransactionPreviewsBatch,
+)
 
 from funpaybotengine.types import TransactionPreviewsBatch
 from funpaybotengine.types.enums import TransactionFilter
@@ -14,7 +17,7 @@ from funpaybotengine.client.session import HTTPMethod
 
 
 if TYPE_CHECKING:
-    from funpaybotengine.client import Bot
+    from funpaybotengine.client import Bot, RawResponse
 
 
 def make_data(m: GetTransactions, bot: Bot) -> dict[str, Any]:
@@ -40,3 +43,12 @@ class GetTransactions(FunPayMethod[TransactionPreviewsBatch]):
 
     filter: TransactionFilter = TransactionFilter.ALL
     from_transaction_id: int = 0
+
+    async def parse_result(self, response: RawResponse[Any]) -> ParsedTransactionPreviewsBatch:
+        result: ParsedTransactionPreviewsBatch = await super().parse_result(response)
+
+        # FunPay omits the hidden ``filter`` input in a part of the ``users/transactions``
+        # responses, so the parsed value is unreliable. The requested filter is known here
+        # and is what the next batch has to be asked with.
+        result.filter = self.filter.value
+        return result
