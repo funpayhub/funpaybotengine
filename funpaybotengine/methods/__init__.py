@@ -17,6 +17,7 @@ from .get_chat_page import GetChatPage as GetChatPage
 from .get_main_page import GetMainPage as GetMainPage
 from .get_purchases import GetPurchases as GetPurchases
 from .upload_avatar import UploadAvatar as UploadAvatar
+from .withdraw_calc import WithdrawCalc as WithdrawCalc
 from .get_2fa_status import Get2faStatus as Get2faStatus
 from .get_offer_page import GetOfferPage as GetOfferPage
 from .get_order_page import GetOrderPage as GetOrderPage
