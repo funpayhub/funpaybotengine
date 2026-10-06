@@ -357,4 +357,4 @@ class EventCollector:
         )
 
         self.chats_upd_ts = r.timestamp
-        return r.flat()
+        return result
