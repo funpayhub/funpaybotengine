@@ -6,6 +6,7 @@ __all__ = ['Router']
 from typing import Any
 from collections.abc import Callable
 
+from eventry.asyncio.config import Context, FromContext, RouterConfig
 from eventry.asyncio.router import Router as BaseRouter
 
 from funpaybotengine.dispatching import events
@@ -15,6 +16,10 @@ from funpaybotengine.dispatching.handler_manager import HandlerManager
 class Router(BaseRouter[Callable[..., Any]]):
     def __init__(self, name: str = '') -> None:
         super().__init__(name=name or f'Router{id(self)}')
+        self._config = RouterConfig(
+            outer_mdw_args=(FromContext('next_call'), Context),
+            inner_mdw_args=(FromContext('next_call'), Context),
+        )
 
         self.on_chat_changed = self._fpbe_mgr(events.ChatChanged)
         self.on_new_message = self._fpbe_mgr(events.NewMessage, True)

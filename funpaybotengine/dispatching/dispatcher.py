@@ -34,7 +34,6 @@ async def on_error_callback(ctx: DispatchingContext, exc: Exception) -> None:
         await default_error_callback(ctx, exc)
 
 
-
 async def on_handler(ctx: DispatchingContext, result: Any) -> None: ...
 
 
