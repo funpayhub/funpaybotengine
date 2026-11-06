@@ -25,9 +25,14 @@ async def on_error_callback(ctx: DispatchingContext, exc: Exception) -> None:
     exc_event = ExceptionEvent(object=exc, context=ctx)
 
     try:
-        await ctx.dispatcher.propagate_event(exc_event)
+        result = await ctx.dispatcher.propagate_event(exc_event)
     except Exception as e:
         logger.error('An error occurred while propagating error event.', exc_info=e)
+        return
+
+    if not result.handled:
+        await default_error_callback(ctx, exc)
+
 
 
 async def on_handler(ctx: DispatchingContext, result: Any) -> None: ...
